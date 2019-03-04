@@ -124,6 +124,16 @@ readk:
     mov ax, 0x0800
     ret
 
+killm:    
+    push dx 
+    push ax 
+    mov dx, 0x3f2 
+    xor al, al 
+    out dx, al 
+    pop ax 
+    pop dx 
+    ret
+
 start:
     cli
     mov ax, 0x07c0
@@ -168,6 +178,8 @@ sleep:
     mov bp, msg3
     call puts
 
+    call killm
+    jc die
     cmp ax, 0x0800
     jne die
     call pdone
