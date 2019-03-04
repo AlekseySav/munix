@@ -12,109 +12,123 @@ cursor:
     pop ax
     ret
 
-write:
+puts:
     pusha
-    push cx
     call cursor
-    pop cx
     mov ax, 0x1301
+    xor bh, bh
     int 0x10
     popa
     ret
 
-perr:
-    mov bx, 0x04
-    call write
-    jmp die
+putc:
+    push ax
+    mov ah, 0x0e
+    int 0x10
+    pop ax
+    ret
+
+putl:
+    push ax
+    mov al, 13
+    call putc
+    mov al, 10
+    call putc
+    pop ax
     ret
 
 pdone:
-    mov bx, 0x07
+    pusha
+    push bp
+    mov al, ' '
+    call putc
+    mov al, '['
+    call putc
     mov bp, done
-    mov cx, 3
-    call write
     mov bx, 0x02
-    mov bp, done
-    add bp, 3
-    mov cx, 4
-    call write
+    mov cx, 6
+    call puts
+    mov al, ']'
+    call putc
+    call putl
+    pop bp
+    popa
+    ret
+
+perr:
+    pusha
+    push bp
+    call putl
+    mov bx, 0x04
+    mov cx, 1
+    mov bp, perr.err
+    call puts
+    mov bp, err
     mov bx, 0x07
-    mov bp, done
-    add bp, 7
-    mov cx, 2
-    call write
+    mov cx, 23
+    call puts
+    call putl
+    pop bp
+    popa
+    ret
+
+getc:
+    push bx
+    mov bx, 0x07
+    xor ah, ah
+    int 0x16
+    or al, al
+    jz getc.end
+    call putc
+getc.end:
+    pop bx
     ret
 
 readk:
+    call putl
+    pusha
+    push bp
     mov bx, 0x07
-    mov bp, msg1
-    mov cx, 20
-    call write
+    mov cx, 18
+    mov bp, msg2
+    call puts
+    pop bp
+    popa
 
-    test ax, 0x0fff
-    jne readk_die
-readk_load:
-    mov bx, ax
+    pusha
     xor ah, ah
-    xor dl, dl
-    int 0x13
-    jc readk_load
-    mov ax, bx
-
-    push ds
-    push es
-    mov es, ax
-    mov di, ax
-    mov ah, 0x2
-    mov al, 0x10
-    xor bx, bx
-    xor ch, ch
-    mov cl, 0x02
     xor dx, dx
     int 0x13
-    jc readk_die
+    popa
+    jc die
+
+    pusha
+    push es
+    push di
+    mov ax, 0x0800
+    mov es, ax
+    xor di, di
+    mov ah, 0x02
+    mov al, 17
+    xor bx, bx
+    xor ch, ch
+    mov cx, 0x02
+    xor dx, dx
+    int 0x13
+    pop di
     pop es
-    pop ds
-    
+    popa
+    jc die
+
     call pdone
-    ret
-readk_die:
-    mov bp, msg2
-    mov cx, 26
-    call perr
-
-killm:
-    mov bx, 0x07
-    mov cx, 21
-    mov bp, msg3
-    call write
-    push dx 
-    push ax 
-    mov dx, 0x3f2 
-    xor al, al 
-    out dx, al 
-    pop ax 
-    pop dx 
-
-    mov al, 0xd1
-    out 0x64, al
-    mov al, 0xdf
-    out 0x60, al
-    call pdone
-    ret
-
-pmode:
-    mov bx, 0x07
-    mov cx, 26
-    mov bp, msg4
-    call write
-
+    mov ax, 0x0800
     ret
 
 start:
+    cli
     mov ax, 0x07c0
     mov ds, ax
-    mov ax, 0x9000
+    mov ax, 0x0600
     mov es, ax
     mov cx, 0x100
     xor di, di
@@ -122,8 +136,10 @@ start:
     cld
     rep
     movsw
-    jmp 0x9000:go
+    sti
+    jmp 0x0600:go
 go:
+    cli
     mov ax, cs
     mov ds, ax
     mov es, ax
@@ -131,55 +147,49 @@ go:
     mov gs, ax
     mov ss, ax
     mov sp, 0x400
+    sti
+
+    call putl
+    call putl
+    mov bx, 0x07
+    mov cx, 37
+    mov bp, msg1
+    call puts
+    call putl
+sleep:
+    call getc
+    cmp ah, 0x1c
+    jne sleep
+
+    call readk
 
     mov bx, 0x07
-    mov cx, 15
-    mov bp, munix
-    call write
+    mov cx, 19
+    mov bp, msg3
+    call puts
 
-    mov ax, 0x1000
-    call readk
-    call killm
-
-    call cursor
-    mov [0x8000], dx
-    call pmode
-
-    mov bp, msg2
-    mov cx, 26
-    call perr
-
-    jmp end
+    cmp ax, 0x0800
+    jne die
+    call pdone
+    jmp 0x0800:0
 die:
+    call perr
     hlt
 end:
     jmp $
 
-munix:
-    db 13, 10, "MUNIX 0.0.1", 13, 10
 msg1:
-    db 13, 10, "Loading system ..."
+    db "MUNIX 0.0.1 (Press Enter to continue)"
 msg2:
-    db 13, 10, 13, 10, "Error loading kernel", 13, 10
+    db "Loading system ..."
 msg3:
-    db 13, 10, "Confirm changes ..."
-msg4:
-    db 13, 10, 13, 10, "Switching to pmode ..."
+    db "Confirm changes ..."
 done:
-    db " [ done ]"
+    db " done "
+perr.err:
+    db "E"
+err:
+    db ": Failed booting kernel"
 
-gdt_d:
-    dw gdtend - gdt - 1
-    dw gdt, 0x9
-
-gdt: 
-    dd 0, 0
-
-flatcode:
-    db 0xff, 0xff, 0, 0, 0, 10011010b, 10001111b, 0
-flatdata:
-    db 0xff, 0xff, 0, 0, 0, 10010010b, 11001111b, 0
-gdtend:
-
-times 510 - ($-$$) db 0
+times 510 - ($ - $$) db 0
 dw 0xaa55
