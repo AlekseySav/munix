@@ -1,9 +1,8 @@
-BOOTSEG     equ 0x07c0 ; BIOS loads boot here
-INITSEG     equ 0x9000
-SYSSEG      equ 0x0060 ; First free memory
-MAGIC       equ 0x01fe ; MAGIC (0xAA55) location
-SECTORS     equ 15     ; sizeof kernel
-TRACKSIZE   equ 15     ; can't be more than 15
+BOOTSEG     equ 0x07c0
+INITSEG     equ 0x0900
+SYSSEG      equ 0x0060
+MAGIC       equ 0x01fe
+SECTORS     equ 15
 
 start:
     mov ax, BOOTSEG
@@ -19,7 +18,7 @@ start:
     jmp INITSEG:go
 go:
     cli
-    mov ax, cs
+    mov ax, INITSEG
     mov ds, ax
     mov es, ax
     mov fs, ax
@@ -34,98 +33,131 @@ go:
     mov ax, SYSSEG
     call readk
 
-    mov si, msg2
-    call print
-
-    mov dx, 0x03f2
-    mov al, 0x0c
-    out dx, al      ; kill monitor
-
-    mov ah, 0x03
-    xor bh, bh
-    int 0x10
-    mov word [0x510], dx
-
+    mov ax, 0x2401
+    int 0x15
+    
     cli
+    lgdt [ds:gdt_d]
 
-    jmp SYSSEG:0
-    jmp die
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
 
+    mov eax, cr0
+    or ax, 1
+    mov cr0, eax
 
-;
-; read kernel function
-; input: ax - kernel new place
-; ax must be #SYSSEG
-;
+    jmp CODESEG:0 + SYSSEG * 16
+
 readk:
     cmp ax, SYSSEG
     jne die
-    
-    push ax
-    xor ax, ax
-    int 0x13    ; reload disk
-    pop ax
-    jc die
-
     mov es, ax
-    xor bx, bx
-    mov ah, 0x02
-    mov al, 0x01
-    mov cx, TRACKSIZE
-    xor dx, dx
-    int 0x13    ; check, that there're TRACKSIZE sectors/track
-    jc die
-    
-    mov ah, 0x02
-    mov al, SECTORS
-    mov cx, 0x02
-    xor dx, dx
-    xor bx, bx
+
+    xor ah, ah
     int 0x13
     jc die
+    
+    mov ah, 0x02
+    mov al, 0x01
+    xor bx, bx
+    mov cx, 0x0f
+    xor dx, dx
+    int 0x13
+    jc die
+
+    mov ah, 0x02
+    mov al, SECTORS
+    xor bx, bx
+    mov cx, 0x02
+    xor dx, dx
+    int 0x13
+    jc die
+
     ret
 
-;
-; die partition
-; jmp here, if booting failed
-;
+print:
+    pusha
+    push si
+    mov ah, 0x0e
+    xor bh, bh
+    mov bl, 0x07
+print.c:
+    lodsb
+    or al, al
+    jz print.e
+    int 0x10
+    jmp print.c
+print.e:
+    pop si
+    popa
+    ret
+
 die:
     mov si, err
     call print
     cli
     hlt
-end:
     jmp $
-    
-;
-; print function
-; input: si - msg to print
-; must have zero at the end
-; output: si - end of msg
-;
-print:
-    push ax
-    push bx
-    mov ah, 0x0e
-    xor bh, bh
-    mov bl, 0x07
-print.n:
+
+gdt:
+    dd 0, 0
+gdt_code:
+    dw 0xffff
+    dw 0x0
+    db 0x0
+    db 10011010b
+    db 11001111b
+    db 0x0
+gdt_data:
+    dw 0xffff
+    dw 0x0
+    db 0x0
+    db 10010010b
+    db 11001111b
+    db 0x0
+gdt_end:
+
+
+gdt_d:
+    dw gdt_end - gdt
+    dd gdt + INITSEG * 16
+
+CODESEG equ gdt_code - gdt
+DATASEG equ gdt_data - gdt
+
+bits 32
+boot2:
+    mov ax, DATASEG
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    mov esi, msg2 + INITSEG * 16
+    mov ebx, 0xb8000
+.loop:
     lodsb
-    or al, al
-    jz print.e
-    int 0x10
-    jmp print.n
-print.e:
-    pop bx
-    pop ax
-    ret
+    or al,al
+    jz halt
+    or eax,0x0100
+    mov word [ebx], ax
+    add ebx,2
+    jmp .loop
+halt:
+    cli
+    hlt
+    jmp $
 
 msg1:
-    db 13, 10, 13, 10, "Munix 0.0.1 loading...", 13, 10, 0
+    db 13, 10, 13, 10, "Munix 0.0.1 booting...", 13, 10, 0
 msg2:
-    db "Booting system...", 0
+    db "Loading system...", 0
 err:
     db 13, 10, "E: Failed booting Munix", 13, 10, 0
 
-    times MAGIC - ($ - $$) db 0
+    resb MAGIC - ($-$$)
     dw 0xaa55
