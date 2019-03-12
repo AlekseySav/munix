@@ -129,33 +129,8 @@ gdt_d:
 CODESEG equ gdt_code - gdt
 DATASEG equ gdt_data - gdt
 
-bits 32
-boot2:
-    mov ax, DATASEG
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ss, ax
-    mov esi, msg2 + INITSEG * 16
-    mov ebx, 0xb8000
-.loop:
-    lodsb
-    or al,al
-    jz halt
-    or eax,0x0100
-    mov word [ebx], ax
-    add ebx,2
-    jmp .loop
-halt:
-    cli
-    hlt
-    jmp $
-
 msg1:
     db 13, 10, 13, 10, "Munix 0.0.1 booting...", 13, 10, 0
-msg2:
-    db "Loading system...", 0
 err:
     db 13, 10, "E: Failed booting Munix", 13, 10, 0
 
