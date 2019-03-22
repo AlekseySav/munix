@@ -1,8 +1,10 @@
-BOOTSEG         equ 0x07c0
-INITSEG         equ 0x9000
-SYSSEG          equ 0x0060
-SYSSIZE         equ 18
+BOOTSEG     equ 0x07c0                      ; BIOS load boot here
+INITSEG     equ 0x9000                      ; bootloader copy itself here
+SYSSEG      equ 0x0060                      ; first free memory; we load kernel here
+SYSSIZE     equ 0x0001                      ; size of kernel (in sectors)
 
+entry:                                      ; program starts here
+    jmp BOOTSEG:start                       ; long jump to bios segment
 start:
     mov ax, BOOTSEG
     mov ds, ax
@@ -12,192 +14,82 @@ start:
     xor di, di
     xor si, si
     cld
-    rep
-    movsw
-    jmp INITSEG:go
-go:
+    rep                                     ; repeat movsw cx (256) times
+    movsw                                   ; same as, mov [es:di], [ds:si]; di++; si++
+    jmp INITSEG:go                          ; jump to our new segment offset go
+go:                                         ; we are in initseg
     cli
-    mov ax, INITSEG
+    mov ax, cs                              ; load segments now
     mov ds, ax
     mov es, ax
     mov ss, ax
-    mov sp, 0x400
+    mov sp, 0x400                           ; stack size will be 0x200 (512) words
     sti
 
     mov si, msg
-    call print
+    call print                              ; print msg if all right
 
-    mov ax, SYSSEG
-    call readk
-    call killm
-
-    mov ah, 0x03
+    mov ah, 0x03                            ; (used bios interrupt 0x10) ah=0x03 get cursor
     xor bh, bh
-    int 0x10
-    mov ax, 0x08
-    mov gs, ax
-    mov word [gs:0x9500], dx
+    int 0x10                                ; read cursor pos to dx
 
-    mov ax, 0x2401
-    int 0x15
-
-    cli
+    mov [510], dx                           ; save it to use later
 
     mov ax, SYSSEG
-    xor bx, bx
-move:
-    cmp ax, INITSEG
-    je move.end
-    mov ds, ax
-    mov es, bx
-    mov cx, 0x100
-    xor di, di
-    xor si, si
-    cld
-    rep
-    movsw
-    inc ax
-    inc bx
-    jmp move
-move.end:
-    mov ax, cs
-    mov ds, ax
-    mov es, ax
+    call readk                              ; read kernel now
+    call killm                              ; close floppy
 
-    lidt [idt_d]
-    lgdt [gdt_d]
+    call move
+    call a20
+
+    cli    
+    lidt [idt_d]                            ; clear idt
+    lgdt [gdt_d]                            ; load gdt
 
     mov ax, 1
     lmsw ax
 
-    jmp 8:0
-
-die:
+    jmp 8:0                                 ; far jump to system
+    
+die:                                        ; jump here if something was wrong
     mov si, err
-    call print
-end:
+    call print                              ; print error
     cli
     hlt
-    jmp $
+    dw 0xfeeb                               ; loop forever
 
-readk:
-    cmp ax, SYSSEG
-    jne die
-    mov es, ax
-
-    push ax
-    xor ah, ah
-    int 0x13
-    pop ax
-    jc die
-
-    pusha
-    mov ah, 0x02
-    mov al, 0x01
-    xor bx, bx
-    xor dx, dx
-    mov cx, 9
-    int 0x13
-    popa
-    jc die
-    
-    pusha
-    mov ah, 0x02
-    mov al, 0x01
-    xor bx, bx
-    xor dx, dx
-    mov cx, 15
-    int 0x13
-    popa
-    jc s_9
-    
-    pusha
-    mov ah, 0x02
-    mov al, 0x01
-    xor bx, bx
-    xor dx, dx
-    mov cx, 18
-    int 0x13
-    popa
-    jc s_15    
-load:
-    pusha
-    mov ah, 0x02
-    mov al, SYSSIZE
-    xor bx, bx
-    mov cx, 0x02
-    xor dx, dx
-    int 0x13
-    popa
-    jc die
-
-    ret
-
-s_9:
-    push ax
-    mov al, 9
-    jmp s_edit
-s_15:
-    push ax
-    mov al, 15
-    jmp s_edit
-s_edit:
-    mov byte [sectors], al
-    pop ax
-    jmp load
-
-killm:
-	push dx
-	mov dx, 0x03f2
-	xor al, al
-	out dx, al
-	pop dx
-    ret
-
-print:
-    pusha
-    mov ah, 0x0e
-    mov bx, 0x07
-print.c:
-    lodsb
-    or al, al
-    jz print.e
-    int 0x10
-    jmp print.c
-print.e:
-    popa
-    ret
+%include "boot/tools/readk.asm"
+%include "boot/tools/print.asm"
+%include "boot/tools/move.asm"
+%include "boot/tools/a20.asm"
 
 gdt:
-    dq 0
+    dq 0                                    ; null descr
     
-    dw 0xffff, 0
+    dw 0xffff, 0                            ; code descr (0x08 seg)
     db 0
     db 10011010b
     db 11001111b
     db 0
     
-    dw 0xffff, 0
+    dw 0xffff, 0                            ; data descr (0x10 seg)
     db 0
     db 10010010b
     db 11001111b
     db 0
-gdt_end:
 
-gdt_d:
-    dw gdt_end - gdt
+gdt_d:                                      ; gdt descriptor
+    dw 3 * 8 - 1
     dd gdt + INITSEG * 16
 
-idt_d:
+idt_d:                                      ; null idt descriptor
     dw 0
     dd 0
 
-sectors:
-    db 18
 msg:
     db 13, 10, 13, 10, "Munix 0.0.1 booting...", 13, 10, 0
 err:
     db 13, 10, "E: Failed booting Munix", 13, 10, 0
 
-    times 510 - ($-$$) db 0
-    dw 0xaa55
+    resb 510 - ($-$$)                       ; make sure, size of our boot is 512 (one segment) 
+    dw 0xaa55                               ; magic number

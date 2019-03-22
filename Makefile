@@ -1,47 +1,50 @@
+# makefile for munix
+# make (or make all or make munix.img) creates the kernel file (munix.img)
+# make clean delete all output files
+# make test run kernel in qemu
+# make hex dumps system
+
 BOOT = nasm -f bin
-ASM = nasm -f elf32
-CC = gcc -m32 -c -nostdinc -I include/
+AS = nasm -f elf32
+LD = ld -m elf_i386 -e start -Ttext 0x0000
+BIN = objcopy -O binary -R .note -R .comment -S
 
-LD = ld -m elf_i386 -e start
-
-TEST = qemu-system-i386 -full-screen -fda
-HEX = hexdump -C 
-
-%.o: %.asm
-	$(ASM) -o $@ $<
-%.o: %.c
-	$(CC) -o $@ $<
 %.bin: %.asm
 	$(BOOT) -o $@ $<
 
+%.o: %.asm
+	$(AS) -o $@ $<
+
 all: munix.img
 
-munix.img: boot/boot.bin init.bin
+
+munix.img: boot/boot.bin kernel
 	cat $^ > $@
 
-init.bin: boot/head.o init/main.o
-	$(LD) $^ -o init.img
-	objcopy -O binary -R .note -R .comment -S init.img $@
+kernel: boot/head.o
+	$(LD) $^ -o $@
+	$(BIN) $@ $@
 
 boot/boot.bin: boot/boot.asm
 
 boot/head.o: boot/head.asm
 
-init/main.o: init/main.c
-
-test:
-	make
-	$(TEST) munix.img
-	make clean
-
-hex:
-	make
-	$(HEX) munix.img
-	make clean
+TEST = qemu-system-i386 -full-screen -fda
+HEX = hexdump -C
 
 clean:
-	rm boot/*.bin
-	rm boot/*.o
-	rm init/*.o
-	rm *.bin
-	rm *.img
+	rm boot/boot.bin
+	rm boot/head.o
+	rm kernel
+
+test:
+	make all
+	make clean
+	$(TEST) munix.img
+	rm munix.img
+
+hex:
+	make all
+	make clean
+	$(HEX) munix.img
+	rm munix.img
