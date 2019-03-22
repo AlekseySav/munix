@@ -16,6 +16,7 @@ BIN = objcopy -O binary -R .note -R .comment -S
 	$(AS) -o $@ $<
 
 all: munix.img
+	make clean
 
 
 munix.img: boot/boot.bin kernel
@@ -29,22 +30,24 @@ boot/boot.bin: boot/boot.asm
 
 boot/head.o: boot/head.asm
 
-TEST = qemu-system-i386 -full-screen -fda
-HEX = hexdump -C
 
 clean:
 	rm boot/boot.bin
 	rm boot/head.o
 	rm kernel
 
+
+TEST = qemu-system-i386 -full-screen -fda
+HEX = hexdump -C
+
 test:
 	make all
-	make clean
 	$(TEST) munix.img
+	make clean
 	rm munix.img
 
 hex:
 	make all
-	make clean
 	$(HEX) munix.img
+	make clean
 	rm munix.img
