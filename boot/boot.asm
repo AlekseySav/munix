@@ -33,7 +33,7 @@ go:                                         ; we are in initseg
     xor bh, bh
     int 0x10                                ; read cursor pos to dx
 
-    mov [510], dx                           ; save it to use later
+    mov [0x1fe], dx                         ; save it to use later (it's on 0x90510)
 
     mov ax, SYSSEG
     call readk                              ; read kernel now

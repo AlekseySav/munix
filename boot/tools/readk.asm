@@ -82,7 +82,7 @@ load:
     xor bx, bx
     mov cx, 2                               ; read sectors since next
     xor dx, dx
-    int 0x13                                ; now read kernel)
+    int 0x13                                ; now read kernel
     popa
     pop es
     jc die                                  ; exit if error reading kernel

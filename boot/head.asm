@@ -1,31 +1,16 @@
-;
-; test kernel...
-;
-section .text
 global start
+extern main
+
+section .text
 
 start:
-    mov ax, 0x10
+    mov ax, 0x10                            ; set segments
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
-
-    mov ah, 0x02
-    mov ebx, 0xb8000
-    mov si, msg
-print:
-    lodsb
-    or al, al
-    jz end
-    mov [ebx], ax
-    add bx, 2
-    jmp print
-end:
+    
+    call main                               ; launch C :-)
     cli
     hlt
     jmp $
-    ret
-
-msg: 
-    db "Hello, world!", 0

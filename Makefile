@@ -6,7 +6,8 @@
 
 BOOT = nasm -f bin
 AS = nasm -f elf32
-LD = ld -m elf_i386 -e start -Ttext 0x0000
+CC = gcc -m32 -c -nostdinc
+LD = ld -m elf_i386 -e start -Ttext 0x0000 -N
 BIN = objcopy -O binary -R .note -R .comment -S
 
 %.bin: %.asm
@@ -15,6 +16,9 @@ BIN = objcopy -O binary -R .note -R .comment -S
 %.o: %.asm
 	$(AS) -o $@ $<
 
+%.o: %.c
+	$(CC) -o $@ $<
+
 all: munix.img
 	make clean
 
@@ -22,7 +26,7 @@ all: munix.img
 munix.img: boot/boot.bin kernel
 	cat $^ > $@
 
-kernel: boot/head.o
+kernel: boot/head.o init/main.o
 	$(LD) $^ -o $@
 	$(BIN) $@ $@
 
@@ -30,10 +34,12 @@ boot/boot.bin: boot/boot.asm
 
 boot/head.o: boot/head.asm
 
+init/main.o: init/main.c
 
 clean:
 	rm boot/boot.bin
 	rm boot/head.o
+	rm init/main.o
 	rm kernel
 
 
@@ -43,11 +49,9 @@ HEX = hexdump -C
 test:
 	make all
 	$(TEST) munix.img
-	make clean
 	rm munix.img
 
 hex:
 	make all
 	$(HEX) munix.img
-	make clean
 	rm munix.img
