@@ -10,7 +10,6 @@ start:
     mov fs, ax
     mov gs, ax
     
-    mov esp, stack                          ; set stack
     push 0xffff                             ; check stack
     pop ax
     cmp ax, 0xffff
@@ -38,7 +37,3 @@ ignore_int:                                 ; uses to set IDT
     mov ax, 0x7020                          ; fill white left-top part of screen
     mov word [0xb8000], ax
     iret
-
-section .bss
-    resw 2048                               ; stack size is 2048 words
-    stack:

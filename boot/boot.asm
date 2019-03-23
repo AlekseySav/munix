@@ -33,7 +33,7 @@ go:                                         ; we are in initseg
     xor bh, bh
     int 0x10                                ; read cursor pos to dx
 
-    mov [0x1fe], dx                         ; save it to use later (it's on 0x90510)
+    mov [0x1fe], dx                         ; save it to use later (it's on 0x901fe - our 0xaa55 is here now)
 
     mov ax, SYSSEG
     call readk                              ; read kernel now
@@ -42,11 +42,11 @@ go:                                         ; we are in initseg
     call move
     call a20
 
-    cli    
+    cli                                     ; clear interrupts now
     lidt [idt_d]                            ; clear idt
     lgdt [gdt_d]                            ; load gdt
 
-    mov ax, 1
+    mov ax, 1                               ; switch to protected mode
     lmsw ax
 
     jmp 8:0                                 ; far jump to system
@@ -91,5 +91,5 @@ msg:
 err:
     db 13, 10, "E: Failed booting Munix", 13, 10, 0
 
-    resb 510 - ($-$$)                       ; make sure, size of our boot is 512 (one segment) 
-    dw 0xaa55                               ; magic number
+    resb 510 - ($-$$)                       ; make sure, size of our boot is 510 (one segment) 
+    dw 0xaa55                               ; last 2 bytes is magic number

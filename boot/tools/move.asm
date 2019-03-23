@@ -3,13 +3,9 @@
 ; movs system from sysseg to initseg
 ;
 move:
-    push ax
-    push bx
-    push cx
+    pusha
     push ds
     push es
-    push di
-    push si
     cli
 
     mov ax, SYSSEG
@@ -27,12 +23,8 @@ do_move:
     cmp ax, INITSEG                         ; if ax >= initseg return (end of system)
     jne do_move                             ; we only incremented ax, so wu could check only equ
 
-    pop si
-    pop di
     pop es
     pop ds
-    pop cx
-    pop bx
-    pop ax
+    popa
     sti
     ret

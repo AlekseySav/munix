@@ -7,7 +7,7 @@
 BOOT = nasm -f bin
 AS = nasm -f elf32
 CC = gcc -m32 -c -nostdinc
-LD = ld -m elf_i386 -e start -Ttext 0x0000 -N
+LD = ld -m elf_i386 -e start -Ttext 0x0000
 BIN = objcopy -O binary -R .note -R .comment -S
 
 %.bin: %.asm
