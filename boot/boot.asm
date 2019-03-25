@@ -1,67 +1,94 @@
-BOOTSEG     equ 0x07c0                      ; BIOS load boot here
-INITSEG     equ 0x9000                      ; bootloader copy itself here
-SYSSEG      equ 0x0060                      ; first free memory; we load kernel here
-SYSSIZE     equ 0x0001                      ; size of kernel (in sectors)
+;
+; boot.asm
+;
+; this bootloader is loading by BIOS to 0x07c segment
+; then it copies itself to INITSEG (0x9000)
+; print message, that is's loaded
+; then it loads kernel to SYSSEG and close floppy
+; and, after it loads descriptors and switches to protected mode
+;
+; NOTE! max size of this kernel is ~0x80000 bytes = 512KiB
+; There won't be any problems with it now
+; But they may appear in the future
+;
+; NOTE(2)! this bootloader read system from floppy
+; So, it must be loaded from floppy (or from disk img in VM)
+; To loaded it from other device,
+; You must load system in first bytes of its memory
+; And comment/delete "call killm" command
+;
 
-entry:                                      ; program starts here
-    jmp BOOTSEG:start                       ; long jump to bios segment
+BOOTSEG         equ 0x07c0                  ; bios load bootloader here
+INITSEG         equ 0x9000                  ; it copies itself here
+SYSSEG          equ 0x0100                  ; kernel is loaded here
+SYSSIZE         equ 0x8000                  ; size of kernel (in 16 * bytes)
+
+entry:                                      ; start of bootloader
+    jmp BOOTSEG:start                       ; far jump to bootseg
 start:
     mov ax, BOOTSEG
-    mov ds, ax
+    mov ds, ax                              ; ds = BOOTSEG
     mov ax, INITSEG
-    mov es, ax
-    mov cx, 0x100
+    mov es, ax                              ; es = INITSEG
+    mov cx, 256                             ; cx = 256 = size of boot in words
     xor di, di
     xor si, si
     cld
-    rep                                     ; repeat movsw cx (256) times
-    movsw                                   ; same as, mov [es:di], [ds:si]; di++; si++
-    jmp INITSEG:go                          ; jump to our new segment offset go
-go:                                         ; we are in initseg
+    rep                                     ; mov cx(256) words (all bootloader)
+    movsw                                   ; from bootseg to initseg
+    jmp INITSEG:go                          ; far jump to initseg
+go:
     cli
-    mov ax, cs                              ; load segments now
+    mov ax, cs                              ; set all segments to current
     mov ds, ax
     mov es, ax
     mov ss, ax
-    mov sp, 0x400                           ; stack size will be 0x200 (512) words
+    mov sp, 0x400                           ; stack size is 512 words
     sti
-
-    mov si, msg
-    call print                              ; print msg if all right
-
-    mov ah, 0x03                            ; (used bios interrupt 0x10) ah=0x03 get cursor
-    xor bh, bh
-    int 0x10                                ; read cursor pos to dx
-
-    mov [0x1fe], dx                         ; save it to use later (it's on 0x901fe - our 0xaa55 is here now)
+    mov si, msg1
+    call print                              ; from tools/print.asm
 
     mov ax, SYSSEG
-    call readk                              ; read kernel now
-    call killm                              ; close floppy
+    mov es, ax                              ; es = SYSSEG
+    mov ax, SYSSIZE
+    call readk                              ; read system
+    call killm                              ; kill monitor
 
-    call move
-    call a20
+    mov ax, cs
+    mov es, ax                              ; es = cs again
 
-    cli                                     ; clear interrupts now
-    lidt [idt_d]                            ; clear idt
-    lgdt [gdt_d]                            ; load gdt
+    mov ah, 0x03                            ; read cursor pos (to dx)
+    xor bh, bh
+    int 0x10
+    mov [ds:0x1fe], dx                      ; save it to 0x901fe (there is 0xaa55 now)
 
-    mov ax, 1                               ; switch to protected mode
-    lmsw ax
+    cli                                     ; no interrupts allowed
+    call line20
 
-    jmp 8:0                                 ; far jump to system
-    
-die:                                        ; jump here if something was wrong
+    lidt [idt_d]                            ; load descriptors
+    lgdt [gdt_d]
+
+    mov eax, cr0
+    or ax, 1
+    mov cr0, eax                            ; set pmode bit activated
+
+    jmp 8:SYSSEG * 16
+
+die:
     mov si, err
-    call print                              ; print error
-    cli
-    hlt
-    dw 0xfeeb                               ; loop forever
+    call print                              ; from tools/print.asm
+die_loop:
+    xor ah, ah
+    int 0x16                                ; read key
+    mov ah, 0x0e
+    int 0x10                                ; print pushed symbol
+    cmp al, 'y'                             ; if ASCII key is 'y' - reboot
+    jne die_loop                            ; if not wait for key again
+    jmp INITSEG:go                          ; else jump to start
 
-%include "boot/tools/readk.asm"
 %include "boot/tools/print.asm"
-%include "boot/tools/move.asm"
-%include "boot/tools/a20.asm"
+%include "boot/tools/readk.asm"
+%include "boot/tools/line20.asm"
 
 gdt:
     dq 0                                    ; null descr
@@ -82,14 +109,14 @@ gdt_d:                                      ; gdt descriptor
     dw 3 * 8 - 1
     dd gdt + INITSEG * 16
 
-idt_d:                                      ; null idt descriptor
+idt_d:                                      ; idt descriptor
     dw 0
-    dd 0
+    dd 0                                    ; idt uninitialized
 
-msg:
+msg1:
     db 13, 10, 13, 10, "Munix 0.0.1 booting...", 13, 10, 0
 err:
-    db 13, 10, "E: Failed booting Munix", 13, 10, 0
+    db 13, 10, "E: Failed booting Munix. Reboot? [y/n]", 13, 10, 0
 
-    resb 510 - ($-$$)                       ; make sure, size of our boot is 510 (one segment) 
-    dw 0xaa55                               ; last 2 bytes is magic number
+    times 510-($-$$) db 0
+    dw 0xaa55

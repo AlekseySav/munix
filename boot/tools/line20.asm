@@ -1,10 +1,9 @@
 ;
-; a20 utility
+; line20 utility
 ; enables A20 line (need for 32-bit system)
 ;
-a20:
+line20:
     push eax
-    cli
 
     call a20wait
     mov al, 0xad
@@ -32,8 +31,6 @@ a20:
     out 0x64, al
  
     call a20wait
-
-    sti
     pop eax
     ret
 
