@@ -5,7 +5,9 @@
 ; segments, A20 line, stack, etc.
 ; and call main (from C-code) next
 ;
-global start
+global start                                ; entry symbol
+global ignore_int, idt, idt_d               ; uses for interrupts
+
 extern main
 
 start:
@@ -36,3 +38,15 @@ die:
     cli
     hlt
     jmp $
+
+ignore_int:                                 ; default interrupt handler
+    mov bx, 0x0430
+    mov [0xb8000], bx                       ; put red 0 in the start of screen
+    iret
+
+idt:
+    times 256 * 8 db 0                      ; interrupt table: 256 entries
+
+idt_d:
+    dw 256 * 8 - 1
+    dd idt

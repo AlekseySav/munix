@@ -5,11 +5,12 @@
     #define outb(value, port) asm("outb %%al,%%dx"::"a" (value),"d" (port))
 #endif
 
-#ifndef outb_p
-    #define outb_p(value,port) \
-                    asm("outb %%al,%%dx\n\t" \
-		                "jmp 1f\n\t" \
-		                "1:jmp 1f\n\t" \
-		                "1:"::"a" (value),"d" (port))
+#ifndef cli
+    #define cli() asm("cli")
 #endif
+
+#ifndef sti
+    #define sti() asm("sti")
+#endif
+
 #endif

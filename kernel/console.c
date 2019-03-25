@@ -20,12 +20,12 @@ PRIVATE inline void gotoxy(unsigned int nx, unsigned int ny)
 
 PRIVATE inline void set_cursor(void)
 {
-	//cli();
-	outb_p(14, 0x3d4);
-	outb_p(0xff & ((pos - SCREEN_START) >> 9), 0x3d5);
-	outb_p(15, 0x3d4);
-	outb_p(0xff & ((pos - SCREEN_START) >> 1), 0x3d5);
-	//sti();
+	cli();
+	outb(14, 0x3d4);
+	outb(0xff & ((pos - SCREEN_START) >> 9), 0x3d5);
+	outb(15, 0x3d4);
+	outb(0xff & ((pos - SCREEN_START) >> 1), 0x3d5);
+	sti();
 }
 
 PRIVATE inline void print_char(char c)
@@ -33,8 +33,11 @@ PRIVATE inline void print_char(char c)
     *(char *)pos = c;
     pos += 2;
     x++;
-    if(x >= COLUMNS) x = 0;
-    y++;
+    if(x >= COLUMNS) 
+    {
+        x = 0;
+        y++;
+    }
 }
 
 PUBLIC void con_init(void)

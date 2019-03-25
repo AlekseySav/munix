@@ -1,8 +1,8 @@
 ASM = nasm -f elf32
-CC = gcc -m32 -c -nostdinc -I ../ -I ../include/
+CC = gcc -m32 -c -nostdinc -I ../include/
 LD = ld -m elf_i386
 
-OBJECTS = console.o
+OBJECTS = main.o console.o interrupts.o
 
 %.o: %.asm
 	$(ASM) -o $@ $<
@@ -17,5 +17,9 @@ kernel.o: $(OBJECTS)
 
 console.o: console.c
 
+interrupts.o: interrupts.c
+
+init/main.o: init/main.c
+
 clean:
-	rm *.o
+	rm -f *.o

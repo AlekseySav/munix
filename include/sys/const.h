@@ -13,4 +13,8 @@
     #define PUBLIC
 #endif
 
+#ifndef EXTERN
+    #define EXTERN extern
+#endif
+
 #endif
