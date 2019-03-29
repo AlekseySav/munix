@@ -19,7 +19,7 @@ console.o: console.c
 
 interrupts.o: interrupts.c
 
-init/main.o: init/main.c
+main.o: main.c
 
 clean:
 	rm -f *.o

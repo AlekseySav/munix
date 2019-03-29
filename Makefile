@@ -6,7 +6,7 @@ CC = gcc -m32 -c -nostdinc -I include/
 LD = ld -m elf_i386 -e start -Ttext 0x1000
 BIN = objcopy -O binary
 
-TEST = qemu-system-i386 -full-screen -fda
+TEST = qemu-system-i386 -full-screen -soundhw hda -fda
 HEX = hexdump -C
 
 %.bin: %.asm

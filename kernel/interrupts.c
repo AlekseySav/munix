@@ -15,21 +15,22 @@ EXTERN void ignore_int(void);                       // also defined in boot/head
 
 PUBLIC void int_set(int n, uint32_t handler)
 {
+    cli();
     idt[n].low_offset = (uint16_t)(handler & 0xffff);
     idt[n].segment = 0x08;
     idt[n].reserved = 0;
-    idt[n].flags = 0x8E; 
+    idt[n].flags = 0x8e; 
     idt[n].high_offset = (uint16_t)((handler >> 16) & 0xffff);
+    sti();
 }
 
 PUBLIC void int_init(void)
 {
-    cli();
-    for(unsigned i = 0; i < IDT_SIZE; i++)
+    for(u_int i = 0; i < IDT_SIZE; i++)
         int_set(i, (uint32_t)ignore_int);
     
-    asm(".extern idt_d\n\t");                       // also defined in boot/head.asm
-    asm("lidt (idt_d)");
-
+    cli();
+    asm(".extern idt_d\n\t"                         // also defined in boot/head.asm
+        "lidt (idt_d)");
     sti();
 }

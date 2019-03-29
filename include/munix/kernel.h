@@ -3,7 +3,8 @@
 
 #include <sys/types.h>
 #include <sys/const.h>
-#include <asm/io.h>
+#include <munix/asm.h>
+#include <string.h>
 
 EXTERN void con_init(void);
 EXTERN void con_write(const char * ptr);

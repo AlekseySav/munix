@@ -6,9 +6,9 @@
 ; and call main (from C-code) next
 ;
 global start                                ; entry symbol
-global ignore_int, idt, idt_d               ; uses for interrupts
+global ignore_int, idt, idt_d, keyh         ; uses for interrupts
 
-extern main
+extern main, key_handler
 
 start:
     mov ax, 0x10                            ; set segments
@@ -40,8 +40,30 @@ die:
     jmp $
 
 ignore_int:                                 ; default interrupt handler
-    mov bx, 0x0430
-    mov [0xb8000], bx                       ; put red 0 in the start of screen
+    iret
+
+keyh:                                       ; keyboard interrupt handler
+    in al, 0x60                             ; get key data
+    mov bl, al                              ; save it
+    xor edx, edx
+    mov byte dl, al
+
+    in al, 0x61                             ; keybrd control
+    mov ah, al
+    or al, 0x80                             ; disable bit 7
+    out 0x61, al                            ; send it back
+    xchg ah, al                             ; get original
+    out 0x61, al                            ; send that back
+
+    mov al, 0x20                            ; End of Interrupt
+    out 0x20, al
+
+    and bl, 0x80                            ; key released
+    jnz done                                ; don't repeat
+done:
+    push edx
+    call key_handler
+    pop edx
     iret
 
 idt:
