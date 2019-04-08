@@ -5,7 +5,8 @@
 #include <unistd.h>     // for read/write
 #include <fcntl.h>      // for open
 
-#define MINIX_HEADER 32
+#define AOUT_HEADER 32
+#define ELF_HEADER 0x1000
 #define MAGIC 0x04100301
 
 void die(char * str)
@@ -26,11 +27,11 @@ void boot(char * file)
     int fd = open(file, O_RDONLY);
     if(fd < 0) die("E: Can't open boot file");
 
-    if(read(fd, buf, MINIX_HEADER) != MINIX_HEADER)
+    if(read(fd, buf, AOUT_HEADER) != AOUT_HEADER)
         die("E: Can't read boot header");
     if(((long *)buf)[0] != MAGIC)
         die("E: Non-Minix header in boot file");
-    if(((long *)buf)[1] != MINIX_HEADER)
+    if(((long *)buf)[1] != AOUT_HEADER)
         die("E: Non-Minix header in boot file");
     if(((long *)buf)[3] != 0)
         die("E: Invalid data section in boot file");
@@ -50,22 +51,33 @@ void boot(char * file)
     buf[510] = 0x55;
     buf[511] = 0xaa;
 
-    fd = open(file, O_WRONLY);
-    if(write(fd, buf, 512) != 512)
+    if(write(1, buf, 512) != 512)
         die("E: Failed write boot data");
-    close(fd);
 }
 
-void apply(char * flag, char * arg)
+void kernel(char * file)
 {
-    if(strcmp(flag, "--boot") == 0)
-        boot(arg);
+    char buf[0x1000];
+    int fd;
+
+	if ((fd = open(file, O_RDONLY, 0)) < 0)
+		die("E: Unable to open kernel file");
+	if (read(fd, buf, ELF_HEADER) != ELF_HEADER)
+		die("E: Unable to read header of kernel");
+
+    int c;
+	for (int i = 0 ; (c = read(fd, buf, sizeof buf)) > 0 ; i += c )
+		if (write(1, buf, c) != c)
+			die("Write call failed");
+	close(fd);
 }
 
 int main(int argc, char ** argv)
 {
-    if(argc < 3) usage();
+    if(argc != 3) usage();
 
-    for(int i = 1; i < argc; i += 2)
-        apply(argv[i], argv[i + 1]);
+    boot(argv[1]);
+    kernel(argv[2]);
+
+    return(0);
 }

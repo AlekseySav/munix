@@ -1,56 +1,42 @@
-NAME = munix.img
+AS86 = as86 -0 -a
+LD86 = ld86 -0
 
-BOOT = nasm -f bin
-ASM = nasm -f elf32
-CC = gcc -m32 -c -nostdinc -I include/
-LD = ld -m elf_i386 -e start -Ttext 0x1000
-BIN = objcopy -O binary
+AS = gcc -m32 -traditional -c
+CC = gcc -m32
+CFLAFS = -nostdinc -I include/
+LD = ld -s -x -m elf_i386
 
-TEST = qemu-system-i386 -full-screen -soundhw hda -fda
-HEX = hexdump -C
+%.o: %.s
+	$(AS) -o $@ $<
 
-%.bin: %.asm
-	$(BOOT) -o $@ $<
+all: munix.img
 
-%.o: %.asm
-	$(ASM) -o $@ $<
+munix.img: boot/boot kernel tools/build
+	./tools/build boot/boot kernel > $@
 
-%.o: %.c
+boot/boot: boot/boot.s
+	$(AS86) -o $@.o $<
+	$(LD86) -0 -s -o $@ $@.o
+
+kernel: boot/head.o
+	$(LD) $^ -o $@
+
+boot/head.o: boot/head.s
+
+tools/build: tools/build.c
 	$(CC) -o $@ $<
 
-all: $(NAME)
-
-$(NAME): boot/boot.bin kernel.bin
-	cat $^ > $@
-
-kernel.bin: boot/head.o kernel/kernel.o
-	$(LD) -o $@ $^
-	$(BIN) -S $@ $@
-
-boot/boot.bin: boot/boot.asm
-
-boot/head.o: boot/head.asm
-
-kernel/kernel.o:
-	(cd kernel; make)
-
 clean:
-	rm -f kernel.bin
-	(cd boot/; rm -f *.bin)
-	(cd boot/; rm -f *.o)
-	(cd init/; rm -f *.o)
-	(cd kernel/; make clean)
+	rm -f boot/*.o boot/head boot/boot
+	rm -f tools/build
+	rm -f kernel
 
-test:
+test: munix.img
+	qemu-system-i386 -full-screen -fda $<
 	make clean
-	make
-	make clean
-	$(TEST) $(NAME)
-	rm $(NAME)
+	rm munix.img
 
-hex:
+hex: munix.img
+	hexdump -C $<
 	make clean
-	make
-	make clean
-	$(HEX) $(NAME)
-	rm $(NAME)
+	rm munix.img
