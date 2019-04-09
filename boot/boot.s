@@ -26,14 +26,25 @@
 ! /dev/fd0. not from /dev/hd.. or /dev/fd1, etc.
 !
 ! NOTE 3: i don't know, how to make reload procces,
-! so, reboot by hand :-(
+! so, reboot by hand...
 !
+
+.globl begtext, begdata, begbss, endtext, enddata, endbss
+.text
+begtext:
+.data
+begdata:
+.bss
+begbss:
+.text
 
 BOOTSEG = 0x07c0                                            ! bios puts boot in this segment
 INITSEG = 0x9000                                            ! boot move itself here
 
 SYSSEG  = 0x1000                                            ! save kernel in this segment
 SYSSIZE = 0x8000                                            ! kernel size in bytes * 16
+
+MAGIC   = 510                                               ! location of 0xaa55 magic number
 
 entry start
 start:
@@ -66,19 +77,28 @@ go:
     mov sp, #0x400                                          ! value >> 512
     sti
     
-! and now we can print message
+! now we can print message
 
     call print
     .ascii "\n\r\n\rMunix Bootloader 2.0\n\r\0"
 
 ! ok, we've written the message, now
 ! we want to load the system (at 0x10000)
+! and close floppy
 
     mov ax, #SYSSEG
     mov es, ax
     mov ax, #SYSSIZE
     call read_kernel
     call kill_monitor
+
+! before going to protected mode,
+! save cursor position, using bios
+
+    mov ah, #0x03                                           ! read cursor
+    xor bh, bh
+    int 0x10
+    mov MAGIC, dx                                           ! save cursor to [0x9000:MAGIC]
 
     cli                                                     ! ban interrupts!
 
@@ -95,16 +115,28 @@ go:
 
     mov ax, #1
     lmsw ax                                                 ! set protected mode bit active
-    jmpf 0, 8                                               ! far jump to kernel 
 
-! 8 is code seg (defined in gdt)
+! ...and set all segment registers to 0x10
+! (location of data descriptor in gdt)
+
+    mov ax, #0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+! this is last thing, which bootloader do:
+! far jump to our kernel (it located at 0x0000)
+
+    jmpf 0, 8                                               ! 0x8 is code seg (defined in gdt)
 
 ! that's all
-! here are all used in previous code functions and utilities
+! next code is functions and utilities,
+! used in bootloader
 
 die:
     call print
-    .ascii "\n\rE: Failed booting Munix. Reboot? [y/n] \0"
+    .ascii "\n\rE: Failed booting Munix.\n\r\0"
     .word 0xfeeb                                            ! loop forever
 
 ! this routine loads kernel to SYSSEG
@@ -302,3 +334,10 @@ gdt:
 	.word	0x0000		                                    ! base address=0
 	.word	0x9200		                                    ! data read/write
 	.word	0x00c0		                                    ! granularity=4096, 386
+
+.text
+endtext:
+.data
+enddata:
+.bss
+endbss:

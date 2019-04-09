@@ -5,4 +5,8 @@
     #error I want gcc!
 #endif
 
+#ifndef PACKED
+    #define PACKED __attribute((packed))
+#endif
+
 #endif

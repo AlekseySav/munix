@@ -62,8 +62,8 @@ void kernel(char * file)
 
 	if ((fd = open(file, O_RDONLY, 0)) < 0)
 		die("E: Unable to open kernel file");
-	if (read(fd, buf, ELF_HEADER) != ELF_HEADER)
-		die("E: Unable to read header of kernel");
+//	if (read(fd, buf, ELF_HEADER) != ELF_HEADER)
+//		die("E: Unable to read header of kernel");
 
     int c;
 	for (int i = 0 ; (c = read(fd, buf, sizeof buf)) > 0 ; i += c )
