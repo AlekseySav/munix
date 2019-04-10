@@ -17,20 +17,23 @@ LD = ld -s -x -m elf_i386 -Ttext 0x0000
 
 all: munix.img
 
-munix.img: boot/boot kernel tools/build
-	./tools/build boot/boot kernel > $@
+munix.img: boot/boot system tools/build
+	./tools/build boot/boot system > $@
 
 boot/boot: boot/boot.s
 	$(AS86) -o $@.o $<
 	$(LD86) -0 -s -o $@ $@.o
 
-kernel: boot/head.o init/main.o
+system: boot/head.o init/main.o kernel/kernel.o
 	$(LD) $^ -o $@
 	objcopy -O binary -R .note  -R .comment -S $@ $@
 
 boot/head.o: boot/head.s
 
 init/main.o: init/main.c
+
+kernel/kernel.o:
+	(cd kernel; make)
 
 tools/build: tools/build.c
 	$(CC) -o $@ $<
@@ -39,7 +42,8 @@ clean:
 	rm -f boot/*.o boot/head boot/boot
 	rm -f tools/build
 	rm -f init/*.o
-	rm -f kernel
+	rm -f system
+	(cd kernel; make clean)
 
 test: munix.img
 	qemu-system-i386 -full-screen -fda $<

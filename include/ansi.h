@@ -1,3 +1,10 @@
+/*
+* this file tests compiler for
+* correct work
+* and defines some helpful
+* compiler features
+*/
+
 #ifndef _ANSI_H_
 #define _ANSI_H_
 

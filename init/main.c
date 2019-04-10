@@ -1,17 +1,17 @@
 #include <ansi.h>
+#include <sys/const.h>
+#include <asm/system.h>
 
-char value = 'v';
-unsigned pos, x, y;
+extern void con_init(void);
+extern void async_write(const char * ptr);
 
 void main(void)
 {
-    pos = *(unsigned *)(0x90000 + 510);
-    x = pos & 0xff;
-    y = (pos & 0xff00) >> 8;
-    pos = x * 2 + y * 160 + 0xb8000;
-
-    *(char *)pos = value;
-    *(char *)(pos + 1) = 0x07;
+    con_init();
+    sti();
+    
+    async_write("Munix loaded\n");
+    while(1);
 }
 
 long stack[1024];

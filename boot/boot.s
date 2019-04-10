@@ -212,7 +212,7 @@ read_setreg:
     xor dl, dl                                              ! our drive
     ret
 
-! this params are used by read_kernel funktion
+! this params are used by read_kernel function
 heads:      .byte 0
 sectors:    .byte 0
 size:       .word 0

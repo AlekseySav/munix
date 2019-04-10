@@ -1,7 +1,7 @@
 /*
 * head.s 
 *
-* contains 32-bit startup of code
+* contains 32-bit startup code of kernel
 */
 
 .globl _start, idt, gdt
@@ -12,7 +12,7 @@ _start:
     call setup_idt
     call setup_gdt
 
-    movl $0x10, %eax                                        /* load all segments to 0x10 (see boot.s, gdt) */
+    movl $0x10, %eax                                        /* load all segments to 0x10 */
     mov %ax, %ds
     mov %ax, %es
     mov %ax, %fs
@@ -62,6 +62,7 @@ rp_sidt:
 *
 * this routine just only loads
 * gdt descriptor (using lgdt)
+* and reloads cs (by ret command)
 */
 setup_gdt:
     lgdt gdt_d
@@ -69,7 +70,7 @@ setup_gdt:
 
 /*
 * all code, which is located earlier '.org',
-* will be cleared sooner
+* will be cleared later
 */
 .org 0x1000
 
@@ -81,8 +82,9 @@ afterpg:
 
 .align 2
 ignore_int:
-	incb 0xb8000+160		                                /* put something on the screen */
-	movb $2,0xb8000+161		                                /* so that we know something */
+	movb $2, %al
+	incb 0xb8000		                                	/* put something on the screen */
+	movb %al, 0xb8001		                                /* so that we know something */
 	iret
 
 .align 2
