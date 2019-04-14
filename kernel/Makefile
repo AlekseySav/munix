@@ -2,11 +2,11 @@ AS = gcc -m32 -traditional -c
 
 CC = gcc -m32
 C_INC = -nostdinc -I ../include/
-CFLAGS = -c $(C_INC)
+CFLAGS = -c $(C_INC) -Wall -fno-stack-protector	# it's bad thing not to check stack, but have to...
 
 LD = ld -m elf_i386 -r
 
-OBJECTS = console.o
+OBJECTS = console.o vsprintf.o
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ $<
@@ -18,5 +18,7 @@ kernel.o: $(OBJECTS)
 
 console.o: console.c
 
+vsprintf.o: vsprintf.c
+
 clean:
-	rm *.o
+	rm -f *.o

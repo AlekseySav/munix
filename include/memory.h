@@ -63,7 +63,6 @@
     :: "D" (dest), "a" (src), "c" (len))
 #endif
 
-
 #ifndef memcpy
     #define memcpy memcpyb
 #endif

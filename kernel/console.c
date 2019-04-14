@@ -13,6 +13,8 @@
 #define BOTTOM LINES
 #define NULL_ATTR 0x0720
 
+#define TAB 8	// positions in tab ('\t')
+
 PRIVATE unsigned long origin = SCREEN_START;
 PRIVATE unsigned long pos;
 PRIVATE uint8_t x, y;
@@ -103,12 +105,8 @@ PRIVATE void del(void)
 
 PUBLIC void con_init(void)
 {
-    register long _pos = *(unsigned *)(0x90000 + 510);		// cursor pos (see boot/boot.s)
-    short _x = _pos & 0xff;
-    short _y = (_pos & 0xff00) >> 8;
-	gotoxy(_x, _y);
+	gotoxy(*(uint8_t *)(0x90000 + 510), *(uint8_t *)(0x90000 + 511));	// cursor pos (see boot/boot.s)
 }
-
 
 
 PUBLIC void async_write(const char * ptr)
@@ -118,17 +116,24 @@ PUBLIC void async_write(const char * ptr)
 			lf();
 			cr();
 		}
+		else if(*ptr == '\t') {
+			uint8_t tabx = TAB - x % TAB;
+			x += tabx;
+			pos += tabx << 1;
+			if(x >= COLUMNS) {
+				lf();
+				cr();
+			}
+		}
+		else if(*ptr == '\r')
+			cr();
 		else {
 			*(char *)pos = *ptr;
 			*(char *)(pos + 1) = 0x07;
 			x++;
 			if(x >= COLUMNS) {
-				y++;
-				x = 0;
-				if(y >= LINES) {
-					scrup();
-					y--;
-				}
+				lf();
+				cr();
 			}
 		pos += 2;
 		}
