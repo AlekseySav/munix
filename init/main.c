@@ -2,25 +2,23 @@
 #include <sys/const.h>
 #include <asm/system.h> // for sti(), nop()
 #include <string.h>
+#include <munix/tty.h>
 
-EXTERN void con_init(void);
-EXTERN void async_write( const char * ptr);
+struct tty_struct tty;
 
 void main(void)
 {
     con_init();
     sti();
     
-    async_write("System loaded\n");
+    sprintf(tty.write_q.buf, "System loaded\n");
+    tty.write_q.tail = 0;
+    tty.write_q.head = 0;
+    while(tty.write_q.buf[tty.write_q.head++]);
 
-    char buf[50];
-    int n = 0;
-    sprintf(buf, "str\n%3c\n%s\n%03o\n%#p\n%x\n%X\n%d\n%+i\n% u\n", 
-        'c', "str", 8, buf, 15, 15, -10, 10, 10);
+    con_write(&tty);
 
-    async_write((const char *)buf);
-
-    while(TRUE) nop();
+    while(TRUE);
 }
 
 long stack[1024];

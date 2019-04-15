@@ -1,4 +1,6 @@
 /*
+* lib.h
+*
 * this file should be used
 * only in lib/
 */
@@ -7,7 +9,7 @@
 #define _LIB_H_
 
 #ifndef LIB_SRC
-    #define LIB_SRC
+    #define LIB_SRC 1
 #endif
 
 #include <ansi.h>

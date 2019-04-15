@@ -43,12 +43,14 @@ PRIVATE char * numstr(char * buf, int num, int base, int size, int precision, in
     else digits = big;
     space = (flagss & ZEROPAD) ? '0' : ' ';  // fill free space
 
-    if((flagss & SIGN) && (num < 0)) {
-        sign = '-';
-        num = -num;
+    if(flagss & SIGN) {
+        if(num < 0) {
+            sign = '-';
+            num = -num;
+        }
+        else if(flagss & PLUS) sign = '+';
+        else if(flagss & SPACE) sign = ' ';
     }
-    else if(flagss & PLUS) sign = '+';
-    else if(flagss & SPACE) sign = ' ';
 
     if(sign) size--;    // size if free space
 
@@ -57,6 +59,10 @@ PRIVATE char * numstr(char * buf, int num, int base, int size, int precision, in
         tmp[i++] = *(digits + div(num, base));
     if(i > precision) precision = i;
     size -= precision;
+
+    if(!(flagss & (LEFT | ZEROPAD)))
+        while(size-- > 0)
+            *buf++ = space;
 
     if(sign)
         *buf++ = sign;
@@ -72,15 +78,16 @@ PRIVATE char * numstr(char * buf, int num, int base, int size, int precision, in
         }
     }
 
-    if(!(flagss & LEFT))
+    if(!(flagss & LEFT)) {
         while(size-- > 0)
             *buf++ = space;
+    }
 	while(i < precision--)
 		*buf++ = '0';
     while(i-- > 0)
         *buf++ = tmp[i];
     while(size-- > 0)
-        *buf++ = space;
+        *buf++ = ' ';
     return buf;
 }
 
@@ -130,11 +137,6 @@ PUBLIC int vsprintf(char * buf, const char * fmt, va_list args)
                     precision = va_arg(args, int);
                 if(precision < 0) precision = 0;
             }
-
-		    // get the conversion qualifier
-		    int qualifier = -1;
-		    if (*fmt == 'h' || *fmt == 'l' || *fmt == 'L')
-			    qualifier = *fmt++;
 
             char * s;   // for 's'
             size_t len; // for 's'

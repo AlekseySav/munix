@@ -3,6 +3,7 @@
 #include <asm/system.h>		// for cli(), sti()
 #include <asm/io.h>			// for outb()
 #include <memory.h>			// for memcpyw, memsetw
+#include <munix/tty.h>
 
 #define SCREEN_START 0xb8000
 #define COLUMNS 80
@@ -17,6 +18,7 @@
 
 PRIVATE unsigned long origin = SCREEN_START;
 PRIVATE unsigned long pos;
+PRIVATE unsigned state = 0;
 PRIVATE uint8_t x, y;
 PRIVATE uint8_t attr = 0x07;
 
@@ -55,7 +57,7 @@ PRIVATE void scroll(int lines)
 	int len = (lines * COLUMNS) << 1;
 	memcpyw(origin, origin - len, SCREEN_SIZE);
 	if(len >= 0) memsetw(origin, NULL_ATTR, len >> 1);
-	else memsetb(origin + SCREEN_SIZE + len, 0, -len);
+	else memsetw(origin + SCREEN_SIZE + len, NULL_ATTR, -(len >> 1));
 }
 
 PRIVATE inline void scrup(void)
@@ -70,7 +72,7 @@ PRIVATE inline void scrdown(void)
 
 PRIVATE void lf(void)
 {
-	if(y <= BOTTOM) {
+	if(y < BOTTOM - 1) {
 		y++;
 		pos += COLUMNS << 1;
 		return;
@@ -109,35 +111,45 @@ PUBLIC void con_init(void)
 }
 
 
-PUBLIC void async_write(const char * ptr)
+PUBLIC void con_write(struct tty_struct * tty)
 {
-    while(*ptr) {
-		if(*ptr == '\n') {
-			lf();
-			cr();
+	int nr = CHARS(tty->write_q);
+	char c;
+	while(nr--) {
+		GETCH(tty->write_q, c);
+		switch(state) {
+			case 0:	// put symbol on screen
+				if(31 < c && c < 127) {
+					if(x >= COLUMNS) {
+						cr();
+						lf();
+					}
+					*(uint8_t *)pos++ = c;
+					*(uint8_t *)pos++ = attr;
+					x++;
+				}
+				else if(c == 10 || c == 11 || c == 12) {	// lf in ascii '\n'
+					cr();
+					lf();
+				}
+				else if(c == 13)	// cr in ascii '\r'
+					cr();
+				else if(c == 8)		// prev pos '\b'
+					if(x) {
+					x--;
+					pos -= 2;
+				}
+				else if(c == 9) {	// tab '\t'
+					c = TAB - (x & (TAB - 1));
+					x += c;
+					pos += c << 1;
+					if(x >= COLUMNS) {
+						cr();
+						lf();
+					}
+				}
+				break;
 		}
-		else if(*ptr == '\t') {
-			uint8_t tabx = TAB - x % TAB;
-			x += tabx;
-			pos += tabx << 1;
-			if(x >= COLUMNS) {
-				lf();
-				cr();
-			}
-		}
-		else if(*ptr == '\r')
-			cr();
-		else {
-			*(char *)pos = *ptr;
-			*(char *)(pos + 1) = 0x07;
-			x++;
-			if(x >= COLUMNS) {
-				lf();
-				cr();
-			}
-		pos += 2;
-		}
-		ptr++;
 	}
 	set_cursor();
 }
