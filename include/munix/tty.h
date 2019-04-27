@@ -16,9 +16,16 @@ struct tty_queue {
 
 struct tty_struct {
     struct tty_queue write_q;
+    void (* write)(struct tty *);
 };
+
+EXTERN struct tty_struct tty_table[];
+
+EXTERN void tty_init(void);
 
 EXTERN void con_init(void);
 EXTERN void con_write(struct tty_struct * tty);
+
+EXTERN int tty_write(unsigned channel, char * buf);
 
 #endif

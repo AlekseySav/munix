@@ -7,6 +7,13 @@ EXTERN size_t strlen(char * str)
     return len;
 }
 
+EXTERN int strcpy(const char * dest, char * src)
+{
+    char * s = src;
+    while(*dest) *src++ = *dest++;
+    return src - s;
+}
+
 EXTERN int sprintf(char * buf, const char * fmt, ...)
 {
     va_list args;

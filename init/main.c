@@ -1,22 +1,16 @@
-#include <ansi.h>       // must be included; for PACKED
+#include <ansi.h>       // for PACKED
 #include <sys/const.h>
 #include <asm/system.h> // for sti(), nop()
 #include <string.h>
 #include <munix/tty.h>
+#include <munix/kernel.h>   // for printk
 
-struct tty_struct tty;
-
-void main(void)
+PUBLIC void main(void)
 {
-    con_init();
+    tty_init();
     sti();
-    
-    sprintf(tty.write_q.buf, "System loaded\n");
-    tty.write_q.tail = 0;
-    tty.write_q.head = 0;
-    while(tty.write_q.buf[tty.write_q.head++]);
 
-    con_write(&tty);
+    printk("System loaded\n");
 
     while(TRUE);
 }

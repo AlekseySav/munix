@@ -14,7 +14,7 @@
 #define _ASM_SYSTEM_H_
 
 #ifndef cli
-    #define cli() ASM("sti")
+    #define cli() ASM("cli")
 #endif
 
 #ifndef sti

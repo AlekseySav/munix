@@ -22,6 +22,7 @@
 
 #include <munix/head.h>
 #include <munix/kernel.h>
+#include <munix/tty.h>
 
 #include <memory.h>
 #include <stdarg.h>

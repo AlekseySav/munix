@@ -6,7 +6,7 @@ CFLAGS = -c $(C_INC) -Wall -fno-stack-protector	# it's bad thing not to check st
 
 LD = ld -m elf_i386 -r
 
-OBJECTS = console.o vsprintf.o
+OBJECTS = console.o vsprintf.o tty.o printk.o
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ $<
@@ -19,6 +19,10 @@ kernel.o: $(OBJECTS)
 console.o: console.c
 
 vsprintf.o: vsprintf.c
+
+tty.o: tty.c
+
+printk.o: printk.c
 
 clean:
 	rm -f *.o

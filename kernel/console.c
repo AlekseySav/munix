@@ -128,18 +128,20 @@ PUBLIC void con_write(struct tty_struct * tty)
 					*(uint8_t *)pos++ = attr;
 					x++;
 				}
-				else if(c == 10 || c == 11 || c == 12) {	// lf in ascii '\n'
+				else if(c == 11 || c == 12)		// lf
+					lf();
+				else if(c == 10) {				// '\n'
 					cr();
 					lf();
 				}
-				else if(c == 13)	// cr in ascii '\r'
+				else if(c == 13)				// '\r' (cr)
 					cr();
-				else if(c == 8)		// prev pos '\b'
+				else if(c == 8)					// '\b'
 					if(x) {
 					x--;
 					pos -= 2;
 				}
-				else if(c == 9) {	// tab '\t'
+				else if(c == 9) {				// '\t'
 					c = TAB - (x & (TAB - 1));
 					x += c;
 					pos += c << 1;
