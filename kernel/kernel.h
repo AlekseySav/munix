@@ -2,17 +2,21 @@
 #include <ansi.h>
 #endif
 
-#ifndef _LIB_H_
-#define _LIB_H_
+#ifndef _KERNEL_H_
+#define _KERNEL_H_
+
+#include <munix/config.h>
 
 #include <sys/const.h>
 #include <sys/types.h>
 
 #include <stddef.h>
-#include <stdarg.h>
-#include <string.h>
-
 #include <memory.h>
 #include <ctype.h>
+
+#include <munix/head.h>
+#include <munix/tty.h>
+
+#include <asm/system.h>
 
 #endif

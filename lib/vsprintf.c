@@ -1,7 +1,4 @@
-#include <sys/const.h>
-#include <stdarg.h>     // for va_list, va_arg
-#include <stddef.h>     // for NULL, for string.h
-#include <string.h>     // for strcpy, strlen
+#include "lib.h"
 
 PRIVATE const char * big = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 PRIVATE const char * small = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -31,11 +28,13 @@ PRIVATE int skip_atoi(const char ** ptr)
     return res;
 }
 
+char numstr_tmp[36];
+
 PRIVATE char * numstr(char * buf, int num, int base, int size, int precision, int flagss)
 {
 	if (base < 2 || base > 36) return NULL;
 
-    char sign = 0, space, tmp[36];  // no need in more than 36 chars
+    char sign = 0, space, * tmp = numstr_tmp;  // no need in more than 36 chars
     const char * digits;
     int i = 0;
 

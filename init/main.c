@@ -1,18 +1,36 @@
-#include <ansi.h>       // for PACKED
+#include <ansi.h>
+#include <munix/config.h>
 #include <sys/const.h>
-#include <asm/system.h> // for sti(), nop()
-#include <string.h>
-#include <munix/tty.h>
-#include <munix/kernel.h>   // for printk
+#include <sys/types.h>
+#include <stddef.h>
+#include <stdarg.h>
 
-PUBLIC void main(void)
+#include <asm/system.h>
+
+EXTERN int vsprintf(char * buf, const char * fmt, va_list args);
+
+int sprintf(char * buf, const char * fmt, ...)
 {
-    tty_init();
-    sti();
+    va_list ap;
+    va_start(ap, fmt);
+    int i = vsprintf(buf, fmt, ap);
+    va_end(ap);
+    return i;
+}
 
-    printk("System loaded\n");
 
-    while(TRUE);
+EXTERN void con_init(void);
+EXTERN void con_write(const char * str);
+
+char buf[1024];
+
+void main(void)
+{
+    con_init();
+    
+    sprintf(buf, "Munix version %s.%s\n\r", "0", "0.1");
+
+    con_write(buf);
 }
 
 long stack[1024];

@@ -1,93 +1,80 @@
-#include <sys/const.h>
-#include <sys/types.h>
-#include <asm/system.h>		// for cli(), sti()
-#include <asm/io.h>			// for outb()
-#include <memory.h>			// for memcpyw, memsetw
-#include <munix/tty.h>
+#include "kernel.h"
 
-#define SCREEN_START 0xb8000
-#define COLUMNS 80
-#define LINES 25
+#define SCREEN_START    0xb8000
+#define SCREEN_END      0xc0000
+#define COLUMNS         80
+#define LINES           25
 
-#define SCREEN_SIZE LINES * COLUMNS * 2
-#define SCREEN_END SCREEN_START + SCREEN_SIZE
-#define BOTTOM LINES
-#define NULL_ATTR 0x0720
+#define SCREEN_SIZE     (LINES * COLUMNS * 2)
 
-#define TAB 8	// positions in tab ('\t')
+PRIVATE uint32_t origin = SCREEN_START;
+PRIVATE uint32_t end = SCREEN_START + SCREEN_SIZE;
+PRIVATE uint32_t lines = LINES, columns = COLUMNS;
 
-PRIVATE unsigned long origin = SCREEN_START;
-PRIVATE unsigned long pos;
-PRIVATE unsigned state = 0;
-PRIVATE uint8_t x, y;
+PRIVATE uint32_t state = 0;
 PRIVATE uint8_t attr = 0x07;
 
-PRIVATE inline void gotoxy(uint8_t new_x, uint8_t new_y)
+PRIVATE uint32_t pos;
+PRIVATE uint8_t x, y;
+
+PRIVATE inline void gotoxy(uint8_t nx, uint8_t ny)
 {
-    if(new_x >= COLUMNS || new_y >= LINES)
+    if(x >= COLUMNS || y >= LINES)
         return;
 
-    x = new_x;
-    y = new_y;
+    x = nx;
+    y = ny;
     pos = origin + ((y * COLUMNS + x) << 1);
 }
 
-PRIVATE inline void set_origin(void)
+PRIVATE void set_cursor(void)
+{
+	cli();
+	outb(14, 0x3d4);
+	outb(0xff & ((y * 80 + x) >> 8), 0x3d5);
+	outb(15, 0x3d4);
+	outb(0xff & (y * 80 + x), 0x3d5);
+	sti();
+}
+
+PRIVATE void set_origin(void)
 {
 	cli();
 	outb(12, 0x3d4);
 	outb(0xff & ((origin - SCREEN_START) >> 9), 0x3d5);
-	outb(13, 0x3d4);
+	outb(13,0x3d4);
 	outb(0xff & ((origin - SCREEN_START) >> 1), 0x3d5);
 	sti();
 }
 
-PRIVATE inline void set_cursor(void)
-{
-	cli();
-	outb(14, 0x3d4);
-	outb(0xff & ((pos - SCREEN_START) >> 9), 0x3d5);
-	outb(15, 0x3d4);
-	outb(0xff & ((pos - SCREEN_START) >> 1), 0x3d5);
-	sti();
-}
-
-PRIVATE void scroll(int lines)
-{
-	int len = (lines * COLUMNS) << 1;
-	memcpyw(origin, origin - len, SCREEN_SIZE);
-	if(len >= 0) memsetw(origin, NULL_ATTR, len >> 1);
-	else memsetw(origin + SCREEN_SIZE + len, NULL_ATTR, -(len >> 1));
-}
-
 PRIVATE inline void scrup(void)
 {
-	scroll(-1);
+    origin += columns << 1;
+    pos += columns << 1;
+    end += columns << 1;
+
+    if(end > SCREEN_END) {
+        memcpyb(SCREEN_START, origin, SCREEN_SIZE);
+		end -= origin - SCREEN_START;
+		origin = SCREEN_START;
+        gotoxy(0, 0);
+        memsetw(origin + SCREEN_SIZE, 0x0720, end - SCREEN_SIZE);
+    }
+    else
+        memsetw(origin + SCREEN_SIZE - (columns << 1), 0x0720, columns << 1);
+    set_origin();
 }
 
 PRIVATE inline void scrdown(void)
 {
-	scroll(1);
-}
-
-PRIVATE void lf(void)
-{
-	if(y < BOTTOM - 1) {
-		y++;
-		pos += COLUMNS << 1;
-		return;
-	}
-	scrup();
-}
-
-PRIVATE void li(void)
-{
-	if(y > 0) {
-		y--;
-		pos -= COLUMNS << 1;
-		return;
-	}
-	scrdown();
+    if(origin == 0) {
+        memcpyb(origin + columns << 1, origin, SCREEN_SIZE);
+        memsetw(SCREEN_START, 0x0720, SCREEN_START + columns << 1);
+    }
+    else {
+        origin -= columns << 1;
+        set_origin();
+    }
 }
 
 PRIVATE void cr(void)
@@ -96,62 +83,73 @@ PRIVATE void cr(void)
 	x = 0;
 }
 
-PRIVATE void del(void)
+PRIVATE void lf(void)
 {
-	if(x) {
-		x--;
-		pos -= 2;
-		*(uint16_t *)pos = NULL_ATTR;
+	if (y + 1 < lines) {
+		y++;
+		pos += columns << 1;
+		return;
 	}
+	scrup();
 }
 
 PUBLIC void con_init(void)
 {
-	gotoxy(*(uint8_t *)(0x90000 + 510), *(uint8_t *)(0x90000 + 511));	// cursor pos (see boot/boot.s)
+    gotoxy(*(uint8_t *)(0x90000+510), *(uint8_t *)(0x90000+511));
 }
 
-
-PUBLIC void con_write(struct tty_struct * tty)
+PUBLIC void __putc(char c)
 {
-	int nr = CHARS(tty->write_q);
-	char c;
-	while(nr--) {
-		GETCH(tty->write_q, c);
-		switch(state) {
-			case 0:	// put symbol on screen
-				if(31 < c && c < 127) {
-					if(x >= COLUMNS) {
-						cr();
-						lf();
-					}
-					*(uint8_t *)pos++ = c;
-					*(uint8_t *)pos++ = attr;
-					x++;
-				}
-				else if(c == 11 || c == 12)		// lf
-					lf();
-				else if(c == 10) {				// '\n'
-					cr();
-					lf();
-				}
-				else if(c == 13)				// '\r' (cr)
-					cr();
-				else if(c == 8)					// '\b'
-					if(x) {
-					x--;
-					pos -= 2;
-				}
-				else if(c == 9) {				// '\t'
-					c = TAB - (x & (TAB - 1));
-					x += c;
-					pos += c << 1;
-					if(x >= COLUMNS) {
-						cr();
-						lf();
-					}
-				}
-				break;
-		}
-	}
-	set_cursor();
+    *(char *)pos++ = c;
+    *(uint8_t *)pos++ = attr;
+    x++;
+}
+
+PUBLIC void con_write(const char * str)
+{
+    char c;
+
+    while(c = *str++) {
+        switch(state) {
+            case 0:
+                if(isprint(c)) {
+                    if(x >= columns) {
+                        cr();
+                        lf();
+                    }
+                    ASM("movb attr, %%ah\n"
+                        "movw %%ax, %1\n"
+                        :: "a" (c), "m" (*(short *)pos));
+                    pos += 2;
+                    x++;
+                }
+                else if(c == '\t') {
+                    c = 8 - (x % 8);
+                    x += c;
+                    pos += c << 1;
+                    if(x >= columns) {
+                        cr();
+                        lf();
+                    }
+                }
+                else if(c == '\b') {
+                    if(x) {
+                        x--;
+                        pos -= 2;
+                    }
+                }
+                else if(c == '\n' || c == '\v' || c == '\f')
+                    lf();
+                else if(c == '\r')
+                    cr();
+                else if(c == '\033')
+                    state = 1;
+                break;
+            default:
+                state = 0;
+                break;
+        }
+    }
+
+    set_cursor();
 }

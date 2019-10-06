@@ -1,14 +1,12 @@
 #ifndef _STRING_H_
 #define _STRING_H_
 
+#ifndef _SIZE_T_
+#define _SIZE_T_
 #include <stddef.h>
-#include <stdarg.h>
+#endif
 
-EXTERN size_t strlen(char * str);
-
-EXTERN int strcpy(const char * dest, char * src);
-
-EXTERN int vsprintf(char * buf, const char * fmt, va_list args);
-EXTERN int sprintf(char * buf, const char * fmt, ...);
+size_t strlen(const char * str);
+char * strcpy(char * dest, const char * src);
 
 #endif

@@ -1,6 +1,18 @@
 #ifndef _SYS_CONST_H_
 #define _SYS_CONST_H_
 
+#ifndef EXTERN
+    #ifdef _LIBRARY
+        #define EXTERN
+    #else
+        #define EXTERN extern
+    #endif
+#endif
+
+#ifndef CONST
+    #define CONST const
+#endif
+
 #ifndef STATIC
     #define STATIC static
 #endif
@@ -13,12 +25,12 @@
     #define PUBLIC
 #endif
 
-#ifndef EXTERN
-    #ifndef LIB_SRC
-        #define EXTERN extern
-    #else
-        #define EXTERN
-    #endif
+#ifndef ASM
+    #define ASM asm
+#endif
+
+#ifndef VOLATILE
+    #define VOLATILE volatile
 #endif
 
 #ifndef TRUE
@@ -27,10 +39,6 @@
 
 #ifndef FALSE
     #define FALSE 0
-#endif
-
-#ifndef ASM
-    #define ASM asm
 #endif
 
 #endif

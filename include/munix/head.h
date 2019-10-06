@@ -1,15 +1,5 @@
-/*
-* munix/header.h
-*
-* this file defines all
-* global varibles, declared
-* in boot/head.s
-*/
-
 #ifndef _MUNIX_HEAD_H_
 #define _MUNIX_HEAD_H_
-
-#include <sys/types.h>
 
 struct idt_struct {
     uint16_t low_offset;

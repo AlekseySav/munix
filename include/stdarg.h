@@ -6,23 +6,16 @@
 typedef char * va_list;
 #endif
 
-#undef __va_rounded
 #define __va_rounded(type) \
-    ((sizeof(type) + sizeof(int) - 1) / sizeof(int) * sizeof(int))
+    (((sizeof(type) + sizeof(int) - 1) / sizeof(int)) * sizeof(int))
 
-#ifndef va_start
-    #define va_start(ap, last_arg) \
-        (ap = (char *)&last_arg + __va_rounded(last_arg))
-#endif
+#define va_start(ap, last) \
+    ap = (((char *)&last) + __va_rounded(last))
 
-#ifndef va_end
-    #define va_end(ap)
-#endif
+#define va_end(ap)
 
-#ifndef va_arg
-    #define va_arg(ap, type) \
-        (ap += __va_rounded(type), \
-        *((type *)(ap - __va_rounded(type))))
-#endif
+#define va_arg(ap, type) \
+    ((ap += __va_rounded(type)), \
+    (*(type *)(ap - __va_rounded(type))))
 
 #endif

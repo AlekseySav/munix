@@ -3,12 +3,11 @@ LD86 = ld86 -0
 
 AS = gcc -m32 -traditional -c
 
-CC = gcc -m32
+CC = gcc
 C_INC = -nostdinc -I include/
-CFLAGS = -c $(C_INC)
+CFLAGS = -m32 -c $(C_INC) -Wbuiltin-declaration-mismatch
 
-LD = ld -s -x -m elf_i386 -Ttext 0x0000
-BIN = objcopy -O binary -R .note  -R .comment -S
+LD = ld -s -x -m elf_i386 -T link.ld
 
 %.o: %.s
 	$(AS) -o $@ $<
@@ -18,17 +17,15 @@ BIN = objcopy -O binary -R .note  -R .comment -S
 
 all: munix.img
 
-munix.img: boot/boot tools/system tools/build
+munix.img: tools/build boot/boot tools/system
 	tools/build boot/boot tools/system > $@
 
 boot/boot: boot/boot.s
 	$(AS86) -o $@.o $<
 	$(LD86) -0 -s -o $@ $@.o
 
-tools/system: boot/head.o init/main.o kernel/kernel.o \
-			lib/lib.a
+tools/system: boot/head.o init/main.o kernel/kernel.o lib/lib.a
 	$(LD) $^ -o $@
-	$(BIN) $@ $@
 
 boot/head.o: boot/head.s
 

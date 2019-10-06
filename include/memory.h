@@ -1,74 +1,44 @@
-/*
-* memory.h
-*
-* contains definitions for working
-* with memory (memcpy, memset, etc)
-* for correct work, you should
-* include sys/const.h before
-* this file (for ASM definition)
-*/
-
 #ifndef _MEMORY_H_
 #define _MEMORY_H_
 
-#ifndef memcpyb
-    #define memcpyb(dest, src, len) ASM( \
-    "cmp %%edi, %%esi\n\t" \
-    "jb 1f\n\t" \
-    "cld\n\t" \
-    "rep\n\t" \
-    "movsb\n\t" \
-    "jmp 2f\n\t" \
-    "1:\n\t" \
-    "addl %%ecx, %%edi\n\t" \
-    "addl %%ecx, %%esi\n\t" \
-    "std\n\t" \
-    "rep\n\t" \
-    "movsb\n\t" \
-    "2:\n\t" \
-    :: "S" (src), "D" (dest), "c" (len))
-#endif
+#define __memset(size, dest, src, len) ASM( \
+    "cld\n" \
+    "rep\n" \
+    "stos" size \
+    :: "D" (dest), "a" (src), "c" (len))
 
-#ifndef memcpyw
-#define memcpyw(dest, src, len) ASM( \
-    "cmp %%edi, %%esi\n\t" \
-    "jb 1f\n\t" \
-    "cld\n\t" \
-    "rep\n\t" \
-    "movsw\n\t" \
-    "jmp 2f\n\t" \
-    "1:\n\t" \
-    "addl %%ecx, %%edi\n\t" \
-    "addl %%ecx, %%esi\n\t" \
-    "std\n\t" \
-    "rep\n\t" \
-    "movsw\n\t" \
-    "2:\n\t" \
+#define memsetb(dest, src, len) \
+    __memset("b", dest, src, len)
+
+#define memsetw(dest, src, len) \
+    __memset("w", dest, src, len)
+
+#define memsetl(dest, src, len) \
+    __memset("l", dest, src, len)
+
+#define memset memsetb
+
+#define __memcpy(size, dest, src, len) ASM( \
+    "cld\n" \
+    "cmpl %%esi, %%edi\n" \
+    "jb 1f\n" \
+    "std\n" \
+    "addl %%ecx, %%edi\n" \
+    "addl %%ecx, %%esi\n" \
+    "1:\n" \
+    "rep\n" \
+    "movs" size \
     :: "D" (dest), "S" (src), "c" (len))
-#endif
 
-#ifndef memsetb
-#define memsetb(dest, src, len) ASM( \
-    "cld\n\t" \
-    "rep\n\t" \
-    "stosb\n\t" \
-    :: "D" (dest), "a" (src), "c" (len))
-#endif
+#define memcpyb(dest, src, len) \
+    __memcpy("b", dest, src, len)
 
-#ifndef memsetw
-#define memsetw(dest, src, len) ASM( \
-    "cld\n\t" \
-    "rep\n\t" \
-    "stosw\n\t" \
-    :: "D" (dest), "a" (src), "c" (len))
-#endif
+#define memcpyw(dest, src, len) \
+    __memcpy("w", dest, src, len)
 
-#ifndef memcpy
-    #define memcpy memcpyb
-#endif
+#define memcpyl(dest, src, len) \
+    __memcpy("l", dest, src, len)
 
-#ifndef memset
-    #define memset memsetb
-#endif
+#define memcpy memcpyb
 
 #endif

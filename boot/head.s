@@ -4,9 +4,9 @@
 * contains 32-bit startup code of kernel
 */
 
-.globl _start, idt, gdt
+.globl start, idt, gdt
 
-_start:
+start:
 	lss stack_start, %esp									/* setup stack */
 
     call setup_idt

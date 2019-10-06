@@ -1,6 +1,9 @@
 !
 ! boot.s
 !
+! i copied it from .../munix to .../boot
+!
+!
 ! this is the second version of munix bootloader
 ! i hope to forget my previous ugly boot...
 !
@@ -80,7 +83,7 @@ go:
 ! now we can print message
 
     call print
-    .ascii "\n\r\n\rMunix Bootloader 2.0\n\r\0"
+    .ascii "\n\r\n\rLoading system ...\n\r\0"
 
 ! ok, we've written the message, now
 ! we want to load the system (at 0x10000)
