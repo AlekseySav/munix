@@ -76,8 +76,6 @@ setup_gdt:
 
 afterpg:
     call main
-    cli
-    hlt
 1:  jmp 1b
 
 .align 2

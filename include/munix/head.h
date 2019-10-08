@@ -18,11 +18,7 @@ struct gdt_struct {
     uint8_t flags;
 };
 
-extern struct idt_struct idt[256];
-extern struct gdt_struct gdt[256];
-
-#define GDT_NULL    0
-#define GDT_CODE    1
-#define GDT_DATA    2
+EXTERN struct idt_struct idt[256];
+EXTERN struct gdt_struct gdt[256];
 
 #endif

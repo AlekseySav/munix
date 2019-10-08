@@ -33,20 +33,20 @@ PRIVATE void gotoxy(uint8_t nx, uint8_t ny)
 PRIVATE INLINE void set_cursor(void)
 {
 	cli();
-	outb(14, 0x3d4);
-	outb(0xff & ((y * 80 + x) >> 8), 0x3d5);
-	outb(15, 0x3d4);
-	outb(0xff & (y * 80 + x), 0x3d5);
+	outb_p(14, 0x3d4);
+	outb_p(0xff & ((y * 80 + x) >> 8), 0x3d5);
+	outb_p(15, 0x3d4);
+	outb_p(0xff & (y * 80 + x), 0x3d5);
 	sti();
 }
 
 PRIVATE INLINE void set_origin(void)
 {
 	cli();
-	outb(12, 0x3d4);
-	outb(0xff & ((origin - SCREEN_START) >> 9), 0x3d5);
-	outb(13,0x3d4);
-	outb(0xff & ((origin - SCREEN_START) >> 1), 0x3d5);
+	outb_p(12, 0x3d4);
+	outb_p(0xff & ((origin - SCREEN_START) >> 9), 0x3d5);
+	outb_p(13,0x3d4);
+	outb_p(0xff & ((origin - SCREEN_START) >> 1), 0x3d5);
 	sti();
 }
 

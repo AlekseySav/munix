@@ -12,6 +12,11 @@ typedef unsigned short uint16_t;
 typedef signed int int32_t;
 typedef unsigned int uint32_t;
 
+// for termios
 typedef unsigned short tcflag_t;
+
+// for stackframe_s
+typedef short seg_t;
+typedef long reg_t;
 
 #endif
