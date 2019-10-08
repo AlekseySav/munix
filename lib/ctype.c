@@ -19,3 +19,5 @@ unsigned char _ctype[257] = { 0x00,     // EOF
     _L, _L, _L, _P, _P, _P, _P, _C,
     0                                   // 128 - 256
 };
+
+unsigned char _ctmp;

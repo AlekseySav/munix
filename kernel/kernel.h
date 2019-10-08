@@ -11,6 +11,8 @@
 #include <sys/types.h>
 
 #include <stddef.h>
+#include <stdarg.h>
+#include <termios.h>
 #include <memory.h>
 #include <ctype.h>
 
@@ -18,5 +20,9 @@
 #include <munix/tty.h>
 
 #include <asm/system.h>
+#include <asm/segment.h>
+#include <asm/io.h>
+
+EXTERN int printk(const char * fmt, ...);
 
 #endif

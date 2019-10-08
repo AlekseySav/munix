@@ -28,13 +28,11 @@ PRIVATE int skip_atoi(const char ** ptr)
     return res;
 }
 
-char numstr_tmp[36];
-
 PRIVATE char * numstr(char * buf, int num, int base, int size, int precision, int flagss)
 {
 	if (base < 2 || base > 36) return NULL;
 
-    char sign = 0, space, * tmp = numstr_tmp;  // no need in more than 36 chars
+    char sign = 0, space, tmp[36];  // no need in more than 36 chars
     const char * digits;
     int i = 0;
 

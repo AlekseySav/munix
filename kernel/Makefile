@@ -6,7 +6,7 @@ CFLAGS = -c $(C_INC)
 
 LD = ld -m elf_i386 -r
 
-OBJECTS = console.o
+OBJECTS = console.o lib.o printk.o tty.o
 
 %.o: %.s
 	$(AS) -o $@ $<
@@ -20,6 +20,12 @@ kernel.o: $(OBJECTS)
 	$(LD) $^ -o $@
 
 console.o: console.c
+
+lib.o: lib.c
+
+printk.o: printk.c
+
+tty.o: tty.c
 
 clean:
 	rm -f *.o

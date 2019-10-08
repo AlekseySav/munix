@@ -1,7 +1,8 @@
 #ifndef _CTYPE_H_
 #define _CTYPE_H_
 
-EXTERN unsigned char _ctype[];
+extern unsigned char _ctype[];
+extern unsigned char _ctmp;
 
 #define _U	0x01	/* upper */
 #define _L	0x02	/* lower */
@@ -28,7 +29,10 @@ EXTERN unsigned char _ctype[];
 #define isascii(c)  ((_ctype + 1)[(c)])
 #define toascii(c)  ((c) & 0x7f)
 
-#define toupper(c)  (islower(c) ? ((c) + ('A' - 'a')) : (c))
-#define tolower(c)  (isupper(c) ? ((c) + ('a' - 'A')) : (c))
+#define toupper(c)  ((_ctmp = (c)), \
+    (islower(_ctmp) ? ((_ctmp) + ('A' - 'a')) : (_ctmp)))
+
+#define tolower(c)  ((_ctmp = (c)), \
+    (isupper(_ctmp) ? ((_ctmp) + ('a' - 'A')) : (_ctmp)))
 
 #endif

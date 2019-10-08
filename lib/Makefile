@@ -1,6 +1,6 @@
 CC = gcc
 C_INC = -nostdinc -I ../include/
-CFLAGS = -m32 -c $(C_INC)
+CFLAGS = -m32 -c $(C_INC) -fno-builtin -fno-stack-protector
 
 AR = ar
 OBJS = ctype.o string.o vsprintf.o

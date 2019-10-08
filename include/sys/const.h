@@ -9,6 +9,14 @@
     #endif
 #endif
 
+#ifndef INLINE
+    #ifdef _LIBRARY
+        #define INLINE
+    #else
+        #define INLINE inline
+    #endif
+#endif
+
 #ifndef CONST
     #define CONST const
 #endif

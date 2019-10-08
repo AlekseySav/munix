@@ -9,8 +9,4 @@
     #define sti() ASM("sti")
 #endif
 
-#ifndef outb
-    #define outb(v, buf) ASM("outb %%al, %%dx" :: "a" (v), "d" (buf))
-#endif
-
 #endif

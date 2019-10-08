@@ -112,7 +112,7 @@ void kernel(const char * filename)
     char * buf;
     size_t i, off = 0;
     struct elf_header h;
-    struct elf_program_header program, p;
+    struct elf_program_header * programs, p;
 
     f = fopen(filename, "r");
 
@@ -153,45 +153,58 @@ void kernel(const char * filename)
 
     if(!h.phnum)
         die("Can't find program header table");
-    if(h.phnum != 2)
-        die("Illegal program headers number");  // phnums set to 2 by link.ld
     if(h.phoff != sizeof(struct elf_header))
         die("Can't find program header table");
+
+    programs = malloc(sizeof(struct elf_program_header) * h.phnum);
 
     for(i = 0; i < h.phnum; i++) {
         if(fread(&p, sizeof(struct elf_program_header), 1, f) != 1)
             die("Can't read ELF program header");
         off += sizeof(struct elf_program_header);
         if(p.type == ELF_PROGRAM_LOAD) {
-            if(p.vaddr != 0 || p.paddr != 0)
-                die("Illegal section addres");
-            if(p.flags & ELF_PROGRAM_FLAG_EXEC == 0)
-                die("Kernel image does not executable");
             if(p.flags & ELF_PROGRAM_FLAG_READ == 0)
                 die("Kernel image does not readable");
-            program = p;
+            programs[i] = p;
+        }
+        else {
+            i--;
+            h.phnum--;
         }
     }
 
-    if(off > program.offset)
+    if(off > programs[0].offset)
         die("Invalid program offset");
 
-    buf = calloc(1, program.memsz);
+    for(i = 0; i < h.phnum; i++) {
+        u_int32_t sz;
 
-    for(i = off; i < program.offset; i++)
-        if(fread(buf, 1, 1, f) != 1)
-            die("Invalid program offset");
+        if(programs[i].memsz % programs[i].align)
+            sz = programs[i].memsz + programs[i].align - programs[i].memsz % programs[i].align;
+        else
+            sz = programs[i].memsz;
         
-    buf[0] = 0;
-    
-    if(fread(buf + program.vaddr, program.filesz, 1, f) != 1)
-        die("Can't read program data");
+        buf = malloc(sz);
+
+        for(u_int32_t j = off; j < programs[i].offset; j++)
+            if(fread(buf, 1, 1, f) != 1)
+                die("Invalid program offset");
+            
+        for(size_t j = 0; j < sz; j++)
+            buf[j] = 0;
+        
+        if(fread(buf, programs[i].filesz, 1, f) != 1)
+            die("Can't read program data");
+        off = programs[i].offset + programs[i].filesz;
+
+        if(fwrite(buf, sz, 1, stdout) != 1)
+            die("Can't write system data");
+
+        free(buf);
+    }
+
     fclose(f);
-
-    if(fwrite(buf, program.memsz, 1, stdout) != 1)
-        die("Can't write system data");
-
-    free(buf);
+    free(programs);
 }
 
 int main(int argc, char ** argv)
