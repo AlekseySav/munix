@@ -18,11 +18,17 @@
 
 #include <munix/head.h>
 #include <munix/tty.h>
+#include <munix/sched.h>
 
 #include <asm/system.h>
 #include <asm/segment.h>
 #include <asm/io.h>
 
-EXTERN int printk(const char * fmt, ...);
+int printk(const char * fmt, ...);
+void panic(const char * msg);
+
+void tty_init(void);
+void trap_init(void);
+void sched_init(void);
 
 #endif

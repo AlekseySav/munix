@@ -12,7 +12,7 @@
     value; })
 
 #define outb_p(value, port) \
-        ASM VOLATILE("outb %%al, %%dx\n" \
+    ASM VOLATILE("outb %%al, %%dx\n" \
         ".word 0x00eb, 0x00eb" \
         :: "a" (value), "d" (port)); \
 

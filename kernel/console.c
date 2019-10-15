@@ -271,6 +271,13 @@ PUBLIC void con_write(struct tty_struct * tty)
                     lf();
                 else if(c == '\r')
                     cr();
+                else if(c == ERASE_CHAR(tty)) {
+                    if(x) {
+                        x--;
+                        pos -= 2;
+                        *(short *)pos = 0x0720;
+                    }
+                }
                 else if(c == '\033')
                     state = 1;
                 break;

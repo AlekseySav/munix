@@ -12,10 +12,10 @@ struct idt_struct {
 struct gdt_struct {
     uint16_t low_limit;
     uint16_t low_base;
-    uint8_t high_base;
-    uint8_t low_access;
-    uint16_t high_limit;
+    uint8_t mid_base;
+    uint8_t access;     // seems to be low flags bits
     uint8_t flags;
+    uint8_t high_base;
 };
 
 EXTERN struct idt_struct idt[256];

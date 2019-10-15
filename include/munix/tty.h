@@ -25,13 +25,21 @@ struct tty_struct {
     void (*write)(struct tty_struct * tty);
 };
 
+/*	
+    erase=del
+*/
+
+#define INIT_C_CC "\177"
+
+#define ERASE_CHAR(tty) (tty->termios.c_cc[VERASE])
+
 EXTERN struct tty_struct tty_table[];
 
-EXTERN void tty_init(void);
-EXTERN void con_init(void);
+void tty_init(void);
+void con_init(void);
 
-EXTERN int tty_write(unsigned channel, const char * buf, int nr);
+int tty_write(unsigned channel, const char * buf, int nr);
 
-EXTERN void con_write(struct tty_struct * tty);
+void con_write(struct tty_struct * tty);
 
 #endif

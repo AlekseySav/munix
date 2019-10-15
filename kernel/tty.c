@@ -12,7 +12,8 @@
 PUBLIC struct tty_struct tty_table[] = {
     { 
         (struct termios) {
-            OPOST | ONLCR
+            OPOST | ONLCR,
+            INIT_C_CC
         },
         { 0, 0, 0, "" },
         con_write

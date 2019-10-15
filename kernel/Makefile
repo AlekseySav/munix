@@ -2,11 +2,12 @@ AS = gcc -m32 -traditional -c
 
 CC = gcc -m32
 C_INC = -nostdinc -I ../include/
-CFLAGS = -c $(C_INC)
+CFLAGS = -c $(C_INC) -fno-stack-protector
 
 LD = ld -m elf_i386 -r
 
-OBJECTS = asm.o console.o lib.o printk.o tty.o
+OBJECTS = asm.o console.o lib.o panic.o printk.o \
+	sched.o trap.o tty.o
 
 %.o: %.s
 	$(AS) -o $@ $<
@@ -25,7 +26,13 @@ console.o: console.c
 
 lib.o: lib.c
 
+panic.o: panic.c
+
 printk.o: printk.c
+
+sched.o: sched.c
+
+trap.o: trap.c
 
 tty.o: tty.c
 
