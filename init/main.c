@@ -19,6 +19,20 @@ PRIVATE void time_init(void)
 	outb(inb_p(0x21) &~ 0x01, 0x21);
 }
 
+PRIVATE void mm_test(void)
+{
+    unsigned long i;
+    
+    i = get_free_page();
+    if(!i) panic("No pages in memory");
+
+    ((char *)i)[1] = 7;
+    if(((char *)i)[1] != 7)
+        panic("Invalid paging");
+
+    free_page(i);
+}
+
 PUBLIC void main(void)
 {
     trap_init();
@@ -27,6 +41,8 @@ PUBLIC void main(void)
     tty_init();
 
     sti();
+
+    mm_test();
 
     printk("Munix version %s.%s\n", RELEASE, VERSION);
 }

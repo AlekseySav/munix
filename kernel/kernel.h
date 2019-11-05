@@ -19,6 +19,7 @@
 #include <munix/head.h>
 #include <munix/tty.h>
 #include <munix/sched.h>
+#include <munix/mm.h>
 
 #include <asm/system.h>
 #include <asm/segment.h>

@@ -24,7 +24,7 @@ boot/boot: boot/boot.s
 	$(AS86) -o $@.o $<
 	$(LD86) -0 -s -o $@ $@.o
 
-tools/system: boot/head.o init/main.o kernel/kernel.o lib/lib.a
+tools/system: boot/head.o init/main.o kernel/kernel.o mm/mm.o lib/lib.a
 	$(LD) $^ -o $@
 
 boot/head.o: boot/head.s
@@ -33,6 +33,9 @@ init/main.o: init/main.c
 
 kernel/kernel.o:
 	(cd kernel; make)
+
+mm/mm.o:
+	(cd mm; make)
 
 lib/lib.a:
 	(cd lib; make)
@@ -46,6 +49,7 @@ clean:
 	rm -f init/*.o
 	rm -f tools/system
 	(cd kernel; make clean)
+	(cd mm; make clean)
 	(cd lib; make clean)
 
 test:
