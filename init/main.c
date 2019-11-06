@@ -45,6 +45,8 @@ PUBLIC void main(void)
     mm_test();
 
     printk("Munix version %s.%s\n", RELEASE, VERSION);
+
+    ASM("call 0x8000");      // run test_util/1.asm file
 }
 
 PRIVATE long stack[1024];

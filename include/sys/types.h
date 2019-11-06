@@ -20,4 +20,7 @@ typedef unsigned char cc_t;
 typedef short seg_t;
 typedef long reg_t;
 
+// for system calls
+typedef int (*fn_ptr)(void);
+
 #endif

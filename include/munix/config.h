@@ -6,7 +6,8 @@
 #define _MUNIX_CONFIG_H_
 
 #define NR_TASKS 64
-#define PAGES 64
-#define LOW_MEM 0x100000
+
+#define LOW_MEM     0x100000
+#define HIGH_MEM    0x200000
 
 #endif

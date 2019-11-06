@@ -17,6 +17,7 @@
 #include <ctype.h>
 
 #include <munix/head.h>
+#include <munix/sys.h>
 #include <munix/tty.h>
 #include <munix/sched.h>
 #include <munix/mm.h>

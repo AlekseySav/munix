@@ -6,8 +6,17 @@ CFLAGS = -c $(C_INC) -fno-stack-protector
 
 LD = ld -m elf_i386 -r
 
-OBJECTS = asm.o console.o lib.o panic.o printk.o \
-	sched.o trap.o tty.o
+OBJECTS = \
+	asm.o \
+	console.o \
+	lib.o \
+	panic.o \
+	printk.o \
+	sched.o \
+	sys.o \
+	syscall.o \
+	trap.o \
+	tty.o
 
 %.o: %.s
 	$(AS) -o $@ $<
@@ -31,6 +40,10 @@ panic.o: panic.c
 printk.o: printk.c
 
 sched.o: sched.c
+
+sys.o: sys.c
+
+syscall.o: syscall.s
 
 trap.o: trap.c
 
