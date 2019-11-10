@@ -2,7 +2,7 @@ AS = gcc -m32 -traditional -c
 
 CC = gcc -m32
 C_INC = -nostdinc -I ../include/
-CFLAGS = -c $(C_INC) -fno-stack-protector
+CFLAGS = -c $(C_INC) -fno-builtin -fno-stack-protector
 
 LD = ld -m elf_i386 -r
 

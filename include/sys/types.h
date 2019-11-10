@@ -16,6 +16,9 @@ typedef unsigned int uint32_t;
 typedef unsigned short tcflag_t;
 typedef unsigned char cc_t;
 
+// for time
+typedef long time_t;
+
 // for stackframe_s
 typedef short seg_t;
 typedef long reg_t;

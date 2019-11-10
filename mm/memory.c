@@ -4,21 +4,21 @@ PRIVATE unsigned short mem_map[PAGES] = { 0 };
 
 PUBLIC unsigned long get_free_page(void)
 {
-    unsigned long page = PAGES;
+    unsigned long page = 0;
 
     ASM("cld\n\t"
         "rep\n\t"
         "scasw\n\t"                     // find free page
         "jne 1f\n\t"
         "movl $1, %%edi\n\t"            // mark page as non-free
+        "shll $12, %%edi\n\t"
+        "addl %1, %%edi\n\t"
         "movl %%edi, %0\n\t"
         "1:"
         : "=r" (page)
-        : "D" (mem_map), "c" (PAGES), "a" (0));
+        : "i" (LOW_MEM), "D" (mem_map), "c" (PAGES), "a" (0));
 
-    if(page >= PAGES)
-        return 0;
-    return (page << 12) + LOW_MEM;
+    return page;
 }
 
 PUBLIC void free_page(unsigned long addr)

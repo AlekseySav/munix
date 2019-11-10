@@ -5,7 +5,7 @@ AS = gcc -m32 -traditional -c
 
 CC = gcc
 C_INC = -nostdinc -I include/
-CFLAGS = -m32 -c $(C_INC)
+CFLAGS = -m32 -c $(C_INC) -fno-builtin
 
 LD = ld -s -x -m elf_i386 -T link.ld
 

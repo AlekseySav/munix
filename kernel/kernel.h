@@ -13,8 +13,10 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <termios.h>
+#include <string.h>
 #include <memory.h>
 #include <ctype.h>
+#include <time.h>
 
 #include <munix/head.h>
 #include <munix/sys.h>
@@ -29,6 +31,7 @@
 int printk(const char * fmt, ...);
 void panic(const char * msg);
 
+void time_init(void);
 void tty_init(void);
 void trap_init(void);
 void sched_init(void);

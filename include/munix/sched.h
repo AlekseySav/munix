@@ -3,6 +3,9 @@
 
 #include <sys/types.h>
 
+#define HZ      1193182
+#define LATCH   (50000 / HZ)
+
 struct stackframe_s {
     seg_t es;
     seg_t ds;

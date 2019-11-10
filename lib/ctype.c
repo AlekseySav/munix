@@ -1,4 +1,4 @@
-#include "lib.h"
+#include <ctype.h>
 
 unsigned char _ctype[257] = { 0x00,     // EOF
     _C, _C, _C, _C, _C, _C, _C, _C,

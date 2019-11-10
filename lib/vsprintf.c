@@ -1,7 +1,10 @@
-#include "lib.h"
+#include <sys/types.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <string.h>
 
-PRIVATE const char * big = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-PRIVATE const char * small = "0123456789abcdefghijklmnopqrstuvwxyz";
+static const char * big = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static const char * small = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 // n = n / base && return n % base;
 #define div(n, base) ({ \
@@ -19,7 +22,7 @@ PRIVATE const char * small = "0123456789abcdefghijklmnopqrstuvwxyz";
 #define SPECIAL	32		// 0x, etc.
 #define SMALL	64		// use 'abcdef...' instead of 'ABCDEF...'
 
-PRIVATE int skip_atoi(const char ** ptr) 
+static int skip_atoi(const char ** ptr) 
 {
     int res = 0;
     while is_digit(**ptr) {
@@ -28,7 +31,7 @@ PRIVATE int skip_atoi(const char ** ptr)
     return res;
 }
 
-PRIVATE char * numstr(char * buf, int num, int base, int size, int precision, int flagss)
+static char * numstr(char * buf, int num, int base, int size, int precision, int flagss)
 {
 	if (base < 2 || base > 36) return NULL;
 
@@ -88,7 +91,7 @@ PRIVATE char * numstr(char * buf, int num, int base, int size, int precision, in
     return buf;
 }
 
-PUBLIC int vsprintf(char * buf, const char * fmt, va_list args)
+int vsprintf(char * buf, const char * fmt, va_list args)
 {
     char * str = buf;
     while(*fmt) {

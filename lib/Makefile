@@ -3,7 +3,12 @@ C_INC = -nostdinc -I ../include/
 CFLAGS = -m32 -c $(C_INC) -fno-builtin -fno-stack-protector
 
 AR = ar
-OBJS = ctype.o string.o vsprintf.o
+OBJS = \
+	ctype.o \
+	sprintf.o \
+	string.o \
+	time.o \
+	vsprintf.o
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ $<
@@ -15,7 +20,11 @@ lib.a: $(OBJS)
 
 ctype.o: ctype.c
 
+sprintf.o: sprintf.c
+
 string.o: string.c
+
+time.o: time.c
 
 vsprintf.o: vsprintf.c
 

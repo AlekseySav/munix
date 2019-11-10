@@ -56,8 +56,6 @@ EXTERN void page_fault(void);
 EXTERN void reserved_trap(void);
 EXTERN void coprocessor_error(void);
 
-EXTERN void sys_call(void);
-
 PUBLIC void trap_init(void)
 {
     outb_p(0x11, 0x20);
@@ -91,6 +89,4 @@ PUBLIC void trap_init(void)
 
     for(int i = 17; i < 32; i++)
         set_trap_gate(i, &reserved_trap);
-
-    set_intr_gate(0x80, sys_call);
 }

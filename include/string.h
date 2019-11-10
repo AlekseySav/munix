@@ -9,4 +9,6 @@
 size_t strlen(const char * str);
 char * strcpy(char * dest, const char * src);
 
+int memcmp(const void * buf1, const void * buf2, size_t len);
+
 #endif
