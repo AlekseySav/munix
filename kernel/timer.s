@@ -1,15 +1,25 @@
-.globl sys_call
+.globl time_intr
 
-sys_call:
+.text
+
+time_intr:
+	incb 0xb8000
+    
     pushl %ds
     pushl %es
     pushl %edx
     pushl %ecx
     pushl %ebx
+    pushl %eax
     movl $0x10, %edx
     movw %dx, %ds
     movw %dx, %es
-    call sys_call_table(, %eax, 4)
+
+    movb $0x20, %al
+    outb %al, $0x20
+    call schedule
+
+    popl %eax
     popl %ebx
     popl %ecx
     popl %edx

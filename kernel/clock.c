@@ -43,7 +43,7 @@ PRIVATE INLINE void to_bin(struct tm * tm)
 
 PUBLIC time_t startup_time;
 
-PUBLIC void time_init(void)
+PUBLIC void clock_init(void)
 {
     int type;
     struct tm tm;

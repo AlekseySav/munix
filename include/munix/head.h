@@ -21,4 +21,6 @@ struct gdt_struct {
 EXTERN struct idt_struct idt[256];
 EXTERN struct gdt_struct gdt[256];
 
+EXTERN uint32_t pg_dir[1024];
+
 #endif

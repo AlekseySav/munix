@@ -16,6 +16,7 @@ OBJECTS = \
 	sched.o \
 	sys.o \
 	syscall.o \
+	timer.o \
 	trap.o \
 	tty.o
 
@@ -47,6 +48,8 @@ sched.o: sched.c
 sys.o: sys.c
 
 syscall.o: syscall.s
+
+timer.o: timer.s
 
 trap.o: trap.c
 

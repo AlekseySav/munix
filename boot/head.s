@@ -4,8 +4,18 @@
 * contains 32-bit startup code of kernel
 */
 
-.globl start, idt, gdt
+.globl start, idt, gdt, pg_dir
 
+/*
+ * page directory entry
+ * it is set by setup_paging routine
+ */
+pg_dir:
+
+/*
+ * this is the startup kernel code
+ * but it would be cleared and set as page directory
+ */
 start:
 	lss stack_start, %esp									/* setup stack */
 
@@ -69,14 +79,39 @@ setup_gdt:
     ret
 
 /*
-* all code, which is located earlier '.org',
-* will be cleared later
+ * this is page table for pg_dir[0]
+ * all previos code would be overwritten for paging
 */
 .org 0x1000
+pg0:
+.org 0x2000
 
 afterpg:
+	call setup_paging
     call main
 1:  jmp 1b
+
+setup_paging:
+	xorl %eax, %eax
+	xorl %edi, %edi
+	movl $2048, %ecx										/* 8KiB: pg_dir and pg0 */
+	cld
+rep stosl
+	movl $pg0 + 7, pg_dir									/* user, r/w, present bits */
+	movl $7, %eax
+	movl $pg0, %edi
+	movl $1024, %ecx
+1:	stosl
+	addl $4096, %eax
+	decl %ecx
+	jnz 1b
+
+	movl $pg_dir, %eax										/* load pg_dir */
+	movl %eax, %cr3
+	movl %cr0, %eax
+	orl $0x80000000, %eax
+	movl %eax, %cr0
+	ret
 
 .align 2
 ignore_int:

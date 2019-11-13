@@ -1,5 +1,3 @@
-.globl time_intr
-
 .globl divide_error, debug_except, nomask_intr
 .globl breakpoint, overflow, bounds_check
 .globl invalid_opcode, coprocessor_na, double_fault
@@ -8,25 +6,6 @@
 .globl reserved_trap, coprocessor_error
 
 .text
-
-time_intr:
-    cli
-	incb 0xb8000
-    
-    pusha
-    subl $32, %esp
-
-    call schedule
-    
-    movl %eax, 8(%esp)   # new ret addres
-    movb $0x20, %al
-    outb %al, $0x20
-
-    addl $32, %esp
-    popa
-    sti
-    iret
-
 
 divide_error:
     pushl $0
@@ -95,10 +74,6 @@ reserved_trap:
 coprocessor_error:
     pushl $16
     jmp _trap_die
-
-get_eip: 
-    movl (%esp), %eax
-    ret
 
 _trap_die:
     cli

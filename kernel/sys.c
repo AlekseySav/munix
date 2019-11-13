@@ -1,10 +1,17 @@
 #include "kernel.h"
 
-fn_ptr sys_call_table[] = {
+EXTERN void sys_call(void);
+
+PUBLIC fn_ptr sys_call_table[] = {
     check_syscalls
 };
 
-int check_syscalls(void)
+PUBLIC void sys_init(void)
 {
-    printk("system call\n");
+    set_intr_gate(0x80, sys_call);
+}
+
+PUBLIC int check_syscalls(void)
+{
+    return printk("system call\n");
 }

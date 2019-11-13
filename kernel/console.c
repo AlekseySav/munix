@@ -63,8 +63,10 @@ PRIVATE INLINE void scrup(void)
         gotoxy(0, 0);
         memsetw(origin + SCREEN_SIZE, 0x0720, end - SCREEN_SIZE);
     }
-    else
+    else {
         memsetw(origin + SCREEN_SIZE - (columns << 1), 0x0720, columns << 1);
+        y++;
+    }
     set_origin();
 }
 

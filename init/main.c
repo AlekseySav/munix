@@ -20,11 +20,12 @@ PRIVATE void mm_test(void)
 EXTERN time_t startup_time;
 
 PUBLIC void main(void)
-{    
-    trap_init();
-    sched_init();
+{
     tty_init();
-    time_init();
+    trap_init();
+    sys_init();
+    clock_init();
+    sched_init();
 
     sti();
 
@@ -32,7 +33,11 @@ PUBLIC void main(void)
 
     printk("\n\nMunix version %s.%s\n", RELEASE, VERSION);
 
-    ASM("call 0x8000");      // run test_util/1.asm file
+    // for(long * i = pg_dir + 2040; i < pg_dir + 2048; i++)
+    //     printk("%x ", *i);
+
+    //ASM("call 0x8000");      // run test_util/1.asm file
+	ASM("ljmp $0x20, $0");
 }
 
 PRIVATE long stack[1024];

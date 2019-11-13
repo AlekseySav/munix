@@ -22,8 +22,10 @@ PRIVATE const char * trap_errors[] = {
 
 #define ERRORS_SIZE     (sizeof(trap_errors) / sizeof(void *))
 
-PUBLIC void exception(int nr, int eip, int cs, int eflags)
+PUBLIC void exception(int nr, int err, int eip, int cs, int eflags)
 {
+    printk("code = %d\n", err);
+
     if(nr < 0 || nr > ERRORS_SIZE)
         printk("Catched unrecognized exception %d\n", nr);
     else if(trap_errors[nr] == NULL)
