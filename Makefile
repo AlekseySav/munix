@@ -55,12 +55,7 @@ clean:
 test:
 	make clean
 	make
-
-	(cd test_util; make)
-	cat munix.img test_util/1 > test_util/munix
-	qemu-system-i386 -full-screen -fda test_util/munix
-	(cd test_util; rm 1 munix)
-
+	qemu-system-i386 -full-screen -fda munix.img
 	make clean
 	rm munix.img
 

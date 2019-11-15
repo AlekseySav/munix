@@ -9,4 +9,3 @@
 #include <sys/const.h>
 
 #include <asm/segment.h>
-#include <munix/sched.h>

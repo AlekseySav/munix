@@ -1,30 +1,8 @@
 #ifndef _MUNIX_SCHED_H_
 #define _MUNIX_SCHED_H_
 
-#include <sys/types.h>
-
-#define HZ      1193182
-#define LATCH   (50000 / HZ)
-
-struct stackframe_s {
-    seg_t es;
-    seg_t ds;
-    
-    reg_t di;
-    reg_t si;
-    reg_t fp;
-    reg_t st;
-    reg_t bx;
-    reg_t dx;
-    reg_t cx;
-    reg_t retreg;
-    reg_t retadr;
-    reg_t pc;
-    reg_t cs;
-    reg_t psw;
-    reg_t sp;
-    reg_t ss;
-};
+#define HZ      100
+#define LATCH   (1193182 / HZ)
 
 struct tss_struct {
     int32_t link;
@@ -56,13 +34,16 @@ struct tss_struct {
     reg_t gs;
 
     uint32_t ldtr;
-    uint32_t offset;
+    uint32_t map_base;
 };
 
 struct task_struct {
-    struct stackframe_s reg;
-    long state;
-    long ptr;
+    struct tss_struct tss;
+};
+
+union task_union {
+    struct task_struct task;    // tss at the top
+    char stack[PAGE_SIZE];      // stack grows from bottom
 };
 
 EXTERN struct task_struct tasks[NR_TASKS];
@@ -70,13 +51,19 @@ EXTERN struct task_struct * current;
 
 #define TSS_FIRST_ENTRY 4
 
-#define switch_to(n_0) do { \
+#define _TSS(n) ((TSS_FIRST_ENTRY + (n << 1)) << 3)
+#define _LDT(n) ((TSS_FIRST_ENTRY + 1 + (n << 1)) << 3)
+
+#define ltr(n) ASM("ltr %%ax" :: "a" (_TSS(n)))
+#define lldt(n) ASM("lldt %%ax" :: "a" (_LDT(n)))
+
+#define switch_to(n) do { \
     struct { long a, b; } __tmp; \
-    ASM( \
+    ASM VOLATILE( \
     "movw %%dx, %1\n" \
-    "ljmp %0\n" \
+    "ljmp * %0\n" \
     ::  "m" (*&__tmp.a), "m" (*&__tmp.b), \
-        "d" (TSS_FIRST_ENTRY << 3)); \
+        "d" (_TSS(n))); \
 } while(0)
 
 #endif

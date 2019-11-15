@@ -85,6 +85,15 @@ setup_gdt:
 .org 0x1000
 pg0:
 .org 0x2000
+/*
+ * this code i copied from test_util/1
+ * because it's much esear to run it
+ * run it with "call 0x2000"
+ */
+	xorl %eax, %eax
+	int $0x80
+	ret
+.org 0x3000
 
 afterpg:
 	call setup_paging
@@ -120,13 +129,13 @@ ignore_int:
 	movb %al, 0xb8001		                                /* so that we know something */
 	iret
 
-.align 2
+.align 4
 .word 0
 idt_d:
     .word 256 * 8 - 1
     .long idt
 
-.align 2
+.align 4
 .word 0
 gdt_d:
 	.word 256 * 8 - 1

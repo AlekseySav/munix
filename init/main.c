@@ -36,8 +36,25 @@ PUBLIC void main(void)
     // for(long * i = pg_dir + 2040; i < pg_dir + 2048; i++)
     //     printk("%x ", *i);
 
-    //ASM("call 0x8000");      // run test_util/1.asm file
-	ASM("ljmp $0x20, $0");
+    ASM("call 0x2000"); // run test_util (in boot/head.s)
+
+    ASM("movl %%esp, %%eax\n\t"
+        "pushl $0x17\n\t"
+        "pushl %%eax\n\t"
+        "pushfl\n\t"
+        "pushl $0x0f\n\t"
+        "pushl $1f\n\t"
+        "iret\n\t"
+        "1:"            // now we are in tss[0], ldt[0] (INIT_TASK)
+        "movw $0x17, %%ax\n\t"
+        "movw %%ax, %%ds\n\t"
+        "movw %%ax, %%es\n\t"
+        "movw %%ax, %%fs\n\t"
+        "movw %%ax, %%gs" ::: "ax");
+
+    // ASM("int $0x80" :: "a" (0));
+
+	// ASM VOLATILE("ljmp $0x20, $0");
 }
 
 PRIVATE long stack[1024];

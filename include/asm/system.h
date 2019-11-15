@@ -34,24 +34,32 @@
     _set_gate(&idt[n], _intr_flags(0, 15), addr)
 
 #define _set_desc(gate_addr, flags, offset) ASM( \
-    "movw %%cx, %0\n" \
-    "movw %%ax, %1\n" \
-    "shrl $16, %eax\n" \
-    "movb %%al, %2\n" \
-    "movw %%bx, %3\n" \
-    "movb %%ah, %4\n" \
-    ::  "m" (*(short *)gate_addr), \
-        "m" (*(((short *)gate_addr) + 1)), \
+    "movw %%bx, %2\n" \
+    "movw %%ax, %%bx\n" \
+    "shrl $16, %%eax\n" \
+    "shll $16, %%ebx\n" \
+    "movw $104, %%bx\n" /* 104 is sizeof tss */ \
+    "movl %%ebx, %0\n" \
+    "movb %%al, %1\n" \
+    "movb %%ah, %3\n" \
+    ::  "m" (*(long *)gate_addr), \
         "m" (*(((char *)gate_addr) + 4)), \
-        "m" (*(((char *)gate_addr) + 5)), \
+        "m" (*(((char *)gate_addr) + 5)), /* actualy, it's short :-) */ \
         "m" (*(((char *)gate_addr) + 7)), \
         "a" (offset), \
-        "b" (flags), \
-        "c" (104)) /* 104 is sizeof tss_struct */
+        "b" (flags))
 
-#define _access_flags(a, f) (((f) << 8) | ((a)))
+#define _access_flags(access, gr, sz) \
+    (access) | \
+    ((((gr & 0x1) << 7) | ((sz & 0x1) << 6)) << 8)
+
+#define _desc_flags(type) \
+    _access_flags(type, 0, 0)
 
 #define set_tss_desc(n, addr) \
-    _set_desc(&gdt[n], _access_flags(0x89, 0), addr)
+    _set_desc(((char *)gdt + n), _desc_flags(0x89), addr)
+
+#define set_ldt_desc(n, addr) \
+    _set_desc(((char *)gdt + n), _desc_flags(0x82), addr)
 
 #endif

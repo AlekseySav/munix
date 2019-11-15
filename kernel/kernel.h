@@ -14,16 +14,16 @@
 #include <stdarg.h>
 #include <termios.h>
 #include <string.h>
-#include <memory.h>
 #include <ctype.h>
 #include <time.h>
 
 #include <munix/head.h>
 #include <munix/sys.h>
 #include <munix/tty.h>
-#include <munix/sched.h>
 #include <munix/mm.h>
+#include <munix/sched.h>
 
+#include <asm/memory.h>
 #include <asm/system.h>
 #include <asm/segment.h>
 #include <asm/io.h>
@@ -31,7 +31,7 @@
 int printk(const char * fmt, ...);
 void panic(const char * msg);
 
-void time_init(void);
+void clock_init(void);
 void tty_init(void);
 void trap_init(void);
 void sched_init(void);
