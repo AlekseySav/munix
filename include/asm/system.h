@@ -33,6 +33,9 @@
 #define set_trap_gate(n, addr) \
     _set_gate(&idt[n], _intr_flags(0, 15), addr)
 
+#define set_system_gate(n, addr) \
+    _set_gate(&idt[n], _intr_flags(3, 15), addr)        // user can call this
+
 #define _set_desc(gate_addr, flags, offset) ASM( \
     "movw %%bx, %2\n" \
     "movw %%ax, %%bx\n" \
@@ -61,5 +64,21 @@
 
 #define set_ldt_desc(n, addr) \
     _set_desc(((char *)gdt + n), _desc_flags(0x82), addr)
+
+#define move_to_user_mode() ASM( \
+        "movl %%esp, %%eax\n\t" \
+        "pushl $0x17\n\t" \
+        "pushl %%eax\n\t" \
+        "pushfl\n\t" \
+        "pushl $0x0f\n\t" \
+        "pushl $1f\n\t" \
+        "iret\n\t" \
+        "1:" \
+        "movw $0x17, %%ax\n\t" \
+        "movw %%ax, %%ds\n\t" \
+        "movw %%ax, %%es\n\t" \
+        "movw %%ax, %%fs\n\t" \
+        "movw %%ax, %%gs" \
+        ::: "ax")
 
 #endif

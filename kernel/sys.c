@@ -3,15 +3,21 @@
 EXTERN void sys_call(void);
 
 PUBLIC fn_ptr sys_call_table[] = {
-    check_syscalls
+    (fn_ptr)sys_check,
+    (fn_ptr)sys_display
 };
 
 PUBLIC void sys_init(void)
 {
-    set_intr_gate(0x80, sys_call);
+    set_system_gate(0x80, sys_call);
 }
 
-PUBLIC int check_syscalls(void)
+PUBLIC int sys_check(void)
 {
-    return printk("system call\n");
+    return printk("test_util... ok\n");
+}
+
+PUBLIC int sys_display(const char * msg)
+{
+    return printk(msg);
 }

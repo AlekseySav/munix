@@ -79,21 +79,25 @@ setup_gdt:
     ret
 
 /*
- * this is page table for pg_dir[0]
+ * this is page tables for pg_dir
  * all previos code would be overwritten for paging
+ * we use 8 MiB of memory (see gdt belong ...)
+ * so, to describe it, we need too page_tables (pg0 and pg1)
+ * ... as one page table describes 4MiB
 */
 .org 0x1000
 pg0:
 .org 0x2000
+pg1:
+.org 0x3000
 /*
  * this code i copied from test_util/1
  * because it's much esear to run it
- * run it with "call 0x2000"
+ * run it with "call 0x3000"
  */
 	xorl %eax, %eax
 	int $0x80
 	ret
-.org 0x3000
 
 afterpg:
 	call setup_paging
@@ -107,9 +111,10 @@ setup_paging:
 	cld
 rep stosl
 	movl $pg0 + 7, pg_dir									/* user, r/w, present bits */
+	movl $pg1 + 7, pg_dir + 4								/* user, r/w, present bits */
 	movl $7, %eax
 	movl $pg0, %edi
-	movl $1024, %ecx
+	movl $2048, %ecx
 1:	stosl
 	addl $4096, %eax
 	decl %ecx
@@ -146,7 +151,7 @@ idt:
 
 gdt:
     .quad 0x0000000000000000	                            /* NULL descriptor */
-	.quad 0x00c09a00000007ff	                            /* 8Mb */
-	.quad 0x00c09200000007ff	                            /* 8Mb */
+	.quad 0x00c09a00000007ff	                            /* same, as in boot.s */
+	.quad 0x00c09200000007ff	                            /* ... */
 	.quad 0x0000000000000000	                            /* TEMPORARY - don't use */
 	.fill 252, 8, 0			                                /* space for LDT's and TSS's etc */

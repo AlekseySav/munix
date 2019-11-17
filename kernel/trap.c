@@ -1,6 +1,8 @@
 #include "kernel.h"
 
-PRIVATE const char * trap_errors[] = {
+#define TRAPS 32
+
+PRIVATE const char * trap_errors[TRAPS] = {
     "Divide error",
 	"Debug exception",
 	"Nonmaskable interrupt",
@@ -17,26 +19,45 @@ PRIVATE const char * trap_errors[] = {
 	"General protection",
 	"Page fault",
 	NULL,
-	"Coprocessor error"
+	"Coprocessor error",
+    NULL
 };
 
-#define ERRORS_SIZE     (sizeof(trap_errors) / sizeof(void *))
-
-PUBLIC void exception(int nr, int err, int eip, int cs, int eflags)
+PRIVATE void do_break(long * esp)
 {
-    printk("code = %d\n", err);
+    short * segments = (short *)(esp - 9);
+    long * registers = esp - 7;
+    printk("eax\t\tebx\t\tecx\t\tedx\n");
+    printk("%08x\t%08x\t%08x\t%08x\n", 
+        registers[6], registers[5], registers[4], registers[3]);
 
-    if(nr < 0 || nr > ERRORS_SIZE)
-        printk("Catched unrecognized exception %d\n", nr);
+    printk("edi\t\tesi\t\tebp\t\tesp\n");
+    printk("%08x\t%08x\t%08x\t%08x\n", 
+        registers[2], registers[1], registers[0], (long)esp);
+
+    printk("ds\tes\tfs\tgs\n");
+    printk("%04x\t%04x\t%04x\t%04x\n\n",
+        segments[3], segments[2], segments[1], segments[0]);
+}
+
+PUBLIC void exception(long * esp)
+{
+    int nr = esp[0];
+    int err = esp[1];
+    
+    if(nr < 0 || nr > TRAPS)
+        printk("\nCatched unrecognized exception (%d)\n", nr);
     else if(trap_errors[nr] == NULL)
-        printk("Catched reserved (15, 17-31) error\n");
-    else printk("%s\n", trap_errors[nr]);
+        printk("\nCatched reserved (15, 17-31) error\n");
+    else printk("\n%s: %04x\n", trap_errors[nr], err);
 
-    printk("eip=%d\n", eip);
-    printk("cs=%d\n", cs);
-    printk("eflags=%d\n", eflags);
+    if(nr == 3) do_break(esp);
 
-    panic("exception in system code");
+    printk("cs:eip\t%04x:%p\n", esp[3], esp[4]);
+    printk("ss:esp\t%04x:%p\n", esp[6], esp[7]);
+    printk("efags\t%#x\n", esp[5]);
+
+    if(nr != 3) panic("exception in system code");
 }
 
 // defined in asm.s
@@ -89,6 +110,6 @@ PUBLIC void trap_init(void)
     set_trap_gate(15, &reserved_trap);
     set_trap_gate(16, &coprocessor_error);
 
-    for(int i = 17; i < 32; i++)
+    for(int i = 17; i < TRAPS; i++)
         set_trap_gate(i, &reserved_trap);
 }

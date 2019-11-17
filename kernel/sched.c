@@ -5,10 +5,10 @@ struct task_struct init_task = {
 		0, 
 		(long)(&init_task) + PAGE_SIZE, 0x10,
 		0, 0, 0, 0,
-		(long)pg_dir, 
+		(long)&pg_dir, 
 		0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
-		0x17, 0x17, 0x17, 0x17, 0x17, 0x17,
+		0x17, 0x0f, 0x17, 0x17, 0x17, 0x17,
 		_LDT(0), 0x80000000
 	}
 };
@@ -46,7 +46,7 @@ PUBLIC void sched_init(void)
 	ltr(0);
 	lldt(0);
 
-	print_tss(0);
+	// print_tss(0);
 
 	outb_p(52, 0x43);		        // binary, mode 3, lobyte/hibyte
 	outb(LATCH & 0xff, 0x40);	    // lobyte

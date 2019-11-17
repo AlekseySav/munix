@@ -5,7 +5,8 @@
 
 void sys_init(void);
 
-int check_syscalls(void);
+int sys_check(void);
+int sys_display(const char * msg);
 
 EXTERN fn_ptr sys_call_table[];
 

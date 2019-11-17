@@ -16,6 +16,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <munix/head.h>
 #include <munix/sys.h>

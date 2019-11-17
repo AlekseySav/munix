@@ -41,7 +41,7 @@ coprocessor_na:
 
 double_fault:
     pushl $8
-    jmp _trap_die
+    jmp _error
 
 coprocessor_overrun:
     pushl $9
@@ -49,19 +49,19 @@ coprocessor_overrun:
     
 invalid_tss:
     pushl $10
-    jmp _trap_die
+    jmp _error
 
 segment_np:
     pushl $11
-    jmp _trap_die
+    jmp _error
 
 stack_exept:
     pushl $12
-    jmp _trap_die
+    jmp _error
 
 general_protect:
     pushl $13
-    jmp _trap_die
+    jmp _error
     
 page_fault:
     pushl $14
@@ -76,7 +76,43 @@ coprocessor_error:
     jmp _trap_die
 
 _trap_die:
+    xchgl %eax, (%esp)
+    pushl %eax
+    xorl %eax, %eax
+    xchgl %eax, 4(%esp)
+_error:
     cli
+    pushl %eax
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+    pushl %edi
+    pushl %esi
+    pushl %ebp
+    pushw %ds
+    pushw %es
+    pushw %fs
+    pushw %gs
+    movw $0x10, %ax
+    movw %ax, %ds
+    movw %ax, %es
+    movw %ax, %fs
+    movw %ax, %gs
+    lea 36(%esp), %eax
+    pushl %eax
     call exception
+    popl %eax
+    popw %gs
+    popw %fs
+    popw %es
+    popw %ds
+    popl %ebp
+    popl %esi
+    popl %edi
+    popl %edx
+    popl %ecx
+    popl %ebx
+    popl %eax
+    addl $8, %esp       # skip error code and exception number
     sti
     iret                # as usual, program won't return here
