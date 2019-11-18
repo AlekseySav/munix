@@ -65,7 +65,7 @@ general_protect:
     
 page_fault:
     pushl $14
-    jmp _trap_die
+    jmp _error
 
 reserved_trap:
     pushl $15

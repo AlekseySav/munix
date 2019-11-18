@@ -36,14 +36,14 @@ PUBLIC void main(void)
 
     ASM("call 0x3000"); // run test_util (in boot/head.s)
 
-    ASM("int3");     // breakpoint
+    // ASM("int3");     // breakpoint
     
     move_to_user_mode();
 
     ASM("int $0x80" :: "a" (__NR_user),
         "b" ("succesfully switched to user mode\n"));        // well, it is already user call :-)
 
-    ASM("hlt");         // intel will throw #GP exception
+    // ASM("hlt");         // intel will throw #GP exception
 	// ASM VOLATILE("ljmp $0x20, $0");
 }
 

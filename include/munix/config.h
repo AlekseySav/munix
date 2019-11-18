@@ -8,6 +8,6 @@
 #define NR_TASKS 64
 
 #define LOW_MEM     0x100000
-#define HIGH_MEM    0x200000
+#define HIGH_MEM    0x800000        // 8 MiB
 
 #endif

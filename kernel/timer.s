@@ -5,6 +5,7 @@
 time_intr:
 	incb 0xb8000
     
+    cli
     pushl %ds
     pushl %es
     pushl %edx
@@ -25,4 +26,5 @@ time_intr:
     popl %edx
     popl %es
     popl %ds
+    sti
     iret

@@ -39,6 +39,7 @@ struct tss_struct {
 
 struct task_struct {
     struct tss_struct tss;
+    struct table_struct ldt[3]; // nil, code, data
 };
 
 union task_union {

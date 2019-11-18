@@ -53,9 +53,9 @@ PUBLIC void exception(long * esp)
 
     if(nr == 3) do_break(esp);
 
-    printk("cs:eip\t%04x:%p\n", esp[3], esp[4]);
-    printk("ss:esp\t%04x:%p\n", esp[6], esp[7]);
-    printk("efags\t%#x\n", esp[5]);
+    printk("cs:eip\t%04x:%p\n", esp[3], esp[2]);
+    printk("ss:esp\t%04x:%p\n", esp[6], esp[5]);
+    printk("efags\t%#x\n", esp[4]);
 
     if(nr != 3) panic("exception in system code");
 }
