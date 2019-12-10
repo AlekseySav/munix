@@ -1,10 +1,16 @@
-#include <sys/types.h>
 #include <stdarg.h>
-#include <stddef.h>
 #include <string.h>
+#include <ctype.h>
 
-static const char * big = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-static const char * small = "0123456789abcdefghijklmnopqrstuvwxyz";
+// flags for vsprintf
+
+#define ZEROPAD	    0x0001		// pad with zero
+#define SIGN	    0x0002		// unsigned/signed long
+#define PLUS	    0x0004		// show plus
+#define SPACE	    0x0008		// space if plus
+#define LEFT	    0x0010		// left justified
+#define SPECIAL	    0x0020		// 0x, etc.
+#define SMALL	    0x0040		// use 'abcdef...' instead of 'ABCDEF...'
 
 // n = n / base && return n % base;
 #define div(n, base) ({ \
@@ -12,194 +18,205 @@ static const char * small = "0123456789abcdefghijklmnopqrstuvwxyz";
     n /= (unsigned)base; \
     _res; })
 
-#define is_digit(x) (x >= '0' && x <= '9')
-
-#define ZEROPAD	1		// pad with zero
-#define SIGN	2		// unsigned/signed long
-#define PLUS	4		// show plus
-#define SPACE	8		// space if plus
-#define LEFT	16		// left justified
-#define SPECIAL	32		// 0x, etc.
-#define SMALL	64		// use 'abcdef...' instead of 'ABCDEF...'
-
-static int skip_atoi(const char ** ptr) 
+static int skip_atoi(const char ** ptr)
 {
     int res = 0;
-    while is_digit(**ptr) {
+    while(isdigit(**ptr)) {
         res = res * 10 + *((*ptr)++) - '0';
     }
     return res;
 }
 
-static char * numstr(char * buf, int num, int base, int size, int precision, int flagss)
+static char * print_number(char * buf, int number, unsigned base, int size, int precision, int flags)
 {
-	if (base < 2 || base > 36) return NULL;
+    static const char * small = "0123456789abcdef";
+    static const char * big = "0123456789ABCDEF";
 
-    char sign = 0, space, tmp[36];  // no need in more than 36 chars
     const char * digits;
+    char tmp[36];       // no need in more than 36 symbols
+    char sign = '\0';
+    int special;
     int i = 0;
 
-    if(flagss & SMALL) digits = small;
-    else digits = big;
-    space = (flagss & ZEROPAD) ? '0' : ' ';  // fill free space
+    if(flags & SMALL)
+        digits = small;
+    else 
+        digits = big;
 
-    if(flagss & SIGN) {
-        if(num < 0) {
+    if(flags & SIGN) {
+        size--;
+        if(number < 0) {
+            number = -number;
             sign = '-';
-            num = -num;
         }
-        else if(flagss & PLUS) sign = '+';
-        else if(flagss & SPACE) sign = ' ';
+        else if(flags & SPACE) sign = ' ';
+        else if(flags & PLUS) sign = '+';
+        else size++;
     }
 
-    if(sign) size--;    // size if free space
+    do {
+        tmp[i++] = digits[div(number, base)];
+    } while(number);
 
-    if(num == 0) tmp[i++] = '0';
-    else while(num != 0)
-        tmp[i++] = *(digits + div(num, base));
-    if(i > precision) precision = i;
-    size -= precision;
+    while(i < precision)
+        tmp[i++] = '0';
 
-    if(!(flagss & (LEFT | ZEROPAD)))
+    special = i;
+    if(flags & SPECIAL) {
+        if(base == 16) {
+            if(flags & SMALL)
+                tmp[special++] = 'x';
+            else
+                tmp[special++] = 'X';
+        }
+        if(base == 8 || base == 16)
+            tmp[special++] = '0';
+    }
+    size -= special;
+    
+    if(!(flags & (ZEROPAD | LEFT)))
         while(size-- > 0)
-            *buf++ = space;
+            *buf++ = ' ';
 
-    if(sign)
-        *buf++ = sign;
-    if(flagss & SPECIAL) {
-        if(base == 8) {
-            *buf++ = '0';
-            size--;
-        }
-        else if(base == 16) {
-            *buf++ = '0';
-            *buf++ = 'x';
-            size -= 2;
-        }
-    }
+    if(sign) *buf++ = sign;
 
-    if(!(flagss & LEFT)) {
+    while(special-- > i)
+        *buf++ = tmp[special];
+
+    if((!(flags & LEFT)))
         while(size-- > 0)
-            *buf++ = space;
-    }
-	while(i < precision--)
-		*buf++ = '0';
-    while(i-- > 0)
+            *buf++ = '0';
+    
+    while(i--)
         *buf++ = tmp[i];
+
+    if(flags & LEFT)
+        while(size-- > 0)
+            *buf++ = ' ';
+
+    return buf;
+}
+
+static char * print_null(char * buf, int size)
+{
+    const char * null = "(null)";
+
+    size -= 6;
     while(size-- > 0)
         *buf++ = ' ';
+    while(*null)
+        *buf++ = *null++;
+    return buf;
+}
+
+static inline char * print_pointer(char * buf, void * ptr, int size, int precision,int flags)
+{
+    if(ptr == NULL)
+        return print_null(buf, size);
+    return print_number(buf, (int)ptr, 16, size, precision, flags);
+}
+
+static inline char * print_string(char * buf, char * str, int size, int precision, int flags)
+{
+    if(str == NULL)
+        return print_null(buf, size);
+
+    int len = strlen(str);
+
+    if(precision && len > precision)
+        len = precision;
+
+    size -= len;
+
+    while(size-- > 0)
+        *buf++ = ' ';
+
+    while(len-- > 0)
+        *buf++ = *str++;
+    return buf;
+}
+
+static inline char * do_printf(char * buf, char type, int size, int precision, int flags, va_list * args)
+{
+    switch(type) {
+        case 'd':                               // signed decimal int
+        case 'i': flags |= SIGN;                // ...
+        case 'u':                               // unsigned decimal
+            buf = print_number(buf, va_arg(*args, int), 10, size, precision, flags);
+            break;
+        case 'o':                               // unsigned octal
+            buf = print_number(buf, va_arg(*args, int), 8, size, precision, flags);
+            break;
+        case 'p':                               // pointer
+            flags |= SMALL;
+            buf = print_pointer(buf, va_arg(*args, void *), size, precision, flags);
+            break;
+        case 'x':                               // unsigned small hexadecimal
+            flags |= SMALL;
+        case 'X':                               // unsigned big hexadecimal
+            buf = print_number(buf, va_arg(*args, int), 16, size, precision, flags);
+            break;
+        case 'c':                               // char
+            *buf++ = va_arg(*args, char);
+            break;
+        case 's':
+            buf = print_string(buf, va_arg(*args, char *), size, precision, flags);
+            break;
+        default:
+            *buf++ = '%';                       // else, '%' is default symbol
+            if(type != '%')
+                *buf++ = type;
+            break;
+    }
     return buf;
 }
 
 int vsprintf(char * buf, const char * fmt, va_list args)
 {
-    char * str = buf;
+    char c;
+    int flags;
+    int size;
+    int precision;
+    char * b = buf;
+    
     while(*fmt) {
-        if(*fmt != '%')
-            *str++ = *fmt++;
-        else {
+        if(*fmt != '%') {
+            *b++ = *fmt++;
+            continue;
+        }
 
-            // get flagss
-            int flags = 0;
-            while(*fmt++) {
-                if(*fmt == '0')
-                        flags |= ZEROPAD;
-                else if(*fmt == '+')
-                        flags |= PLUS;
-                else if(*fmt == ' ')
-                        flags |= SPACE;
-                else if(*fmt == '-')
-                        flags |= LEFT;
-                else if(*fmt == '#')
-                        flags |= SPECIAL;
-                else break;
-            }
+        flags = 0;
+        for(;;) {
+            c = *++fmt;
+            if(c == '#') flags |= SPECIAL;
+            else if(c == '0') flags |= ZEROPAD;
+            else if(c == '-') flags |= LEFT;
+            else if(c == ' ') flags |= SPACE;
+            else if(c == '+') flags |= PLUS;
+            else break;
+        }
 
-            // get field width
-            int field_width = -1;
-            if is_digit(*fmt)   // if number - it is field width
-                field_width = skip_atoi(&fmt);
-            else if(*fmt == '*') { // if star - it's next arg
-                field_width = va_arg(args, int);
-                if(field_width < 0) {
-                    field_width = -field_width;
-                    flags |= LEFT;
-                }
-            }
-
-            // get precision
-            int precision = -1;
-            if(*fmt == '.') {
+        if(*fmt == '*') {
+            size = va_arg(args, int);
+            fmt++;
+        }
+        else
+            size = skip_atoi(&fmt);
+            
+        if(*fmt == '.') {
+            fmt++;
+            if(*fmt == '*') {
+                precision = va_arg(args, int);
                 fmt++;
-                if is_digit(*fmt)
-                    precision = skip_atoi(&fmt);
-                else if(*fmt == '*')
-                    precision = va_arg(args, int);
-                if(precision < 0) precision = 0;
             }
+            else precision = skip_atoi(&fmt);
+        }
+        else precision = 0;
 
-            char * s;   // for 's'
-            size_t len; // for 's'
-            int * ip;   //for 'n'
-
-            switch(*fmt++) {  // now it is type of print
-                case 'c':                           // write char
-                    if(!(flags & LEFT))
-                        while(field_width-- > 1)    // because one symbol is char
-                            *str++ = ' ';
-                    *str++ = va_arg(args, char);
-                    while(field_width-- > 1)
-                        *str++ = ' ';
-                    break;
-                case 's':                           // write string
-                    s = va_arg(args, char *);
-                    len = strlen(s);
-                    if (precision < 0)
-                        precision = len;
-                    else if (len > precision)
-                        len = precision;
-                        
-                    field_width -= len;
-                    if(!(flags & LEFT))
-                        while(field_width-- > 0)
-                            *str++ = ' ';
-                    while(len-- > 0)
-                        *str++ = *s++;
-                    while(field_width-- > 0)
-                        *str++ = ' ';
-                    break;
-                case 'o':                           // write oct-number
-                    str = numstr(str, va_arg(args, unsigned), 8, field_width, precision, flags);
-                    break;
-                case 'p':                           // write pointer
-                    str = numstr(str, (unsigned)va_arg(args, void *), 16, field_width, precision, flags);
-                    break;
-                case 'x':                           // little digits (16)
-                    flags |= SMALL;
-                case 'X':                           // big digits (16)
-                    str = numstr(str, va_arg(args, int), 16, field_width, precision, flags);
-                    break;
-                case 'd':                           // signed number (10)
-                case 'i':                           // same
-                    flags |= SIGN;
-                case 'u':                           // unsigned
-                    str = numstr(str, va_arg(args, int), 10, field_width, precision, flags);
-                break;
-                case 'n':                           // written symbols
-                    ip = va_arg(args, int *);
-                    *ip = (str - buf);
-                    break;
-                default:                            // else '%' is default symbol
-                    *str++ = '%';
-                    if(*fmt != '%' && *fmt != '\0')
-                        *str++ = *fmt;
-                    else if(*fmt == '%')
-                        fmt--;
-                    break;
-            }
+        if(*fmt) {
+            b = do_printf(b, *fmt, size, precision, flags, &args);
+            fmt++;
         }
     }
-    *str = '\0';
-    va_end(args);   // there's no nessesary to write it, but why not :-)
-    return str - buf;
+    return b - buf;
 }

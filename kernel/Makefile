@@ -1,43 +1,23 @@
-AS = gcc -m32 -traditional -c
+include ../Makefile.inc
 
-CC = gcc -m32
-C_INC = -nostdinc -I ../include/
-CFLAGS = -c $(C_INC) -fno-builtin -fno-stack-protector
+INCLUDE += ../include
 
-LD = ld -m elf_i386 -r
-
-OBJECTS = \
-	asm.o \
-	clock.o \
-	console.o \
-	lib.o \
-	panic.o \
-	printk.o \
-	sched.o \
-	sys.o \
-	syscall.o \
-	timer.o \
-	trap.o \
-	tty.o
-
-%.o: %.s
-	$(AS) -o $@ $<
-
-%.o: %.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-all: kernel.o
+OBJECTS = asm.o console.o fork.o panic.o printk.o sched.o timer.o trap.o tty.o
 
 kernel.o: $(OBJECTS)
-	$(LD) $^ -o $@
+	$(LD) $(LDFLAG) -r -o $@ $^
 
-asm.o: asm.s
+clean:
+	rm -f kernel.o $(OBJECTS)
 
-clock.o: clock.c
+#
+# dependences
+#
+asm.o: asm.S
 
 console.o: console.c
 
-lib.o: lib.c
+fork.o: fork.c
 
 panic.o: panic.c
 
@@ -45,15 +25,8 @@ printk.o: printk.c
 
 sched.o: sched.c
 
-sys.o: sys.c
-
-syscall.o: syscall.s
-
-timer.o: timer.s
+timer.o: timer.S
 
 trap.o: trap.c
 
 tty.o: tty.c
-
-clean:
-	rm -f *.o

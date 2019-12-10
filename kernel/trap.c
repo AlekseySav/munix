@@ -1,29 +1,67 @@
-#include "kernel.h"
+/*
+ * trap.c is c-code, that hendles hardware exceptions
+ */
+
+#include <stddef.h>
+
+#include <munix/kernel.h>
+#include <munix/head.h>
+
+#include <asm/io.h>
+#include <asm/system.h>
 
 #define TRAPS 32
 
-PRIVATE const char * trap_errors[TRAPS] = {
-    "Divide error",
-	"Debug exception",
-	"Nonmaskable interrupt",
-	"Breakpoint",
-	"Overflow",
-	"Bounds check",
-	"Invalid opcode",
-	"Coprocessor not available",
-	"Double fault",
-	"Copressor segment overrun",
-	"Invalid TSS",
-	"Segment not present",
-	"Stack exception",
-	"General protection",
-	"Page fault",
-	NULL,
-	"Coprocessor error",
-    NULL
+extern void divide_error(void);
+extern void debug_exception(void);
+extern void nmi_interrupt(void);
+extern void breakpoint(void);
+extern void overflow(void);
+extern void bound_range_exceeded(void);
+extern void invalid_opcode(void);
+extern void device_not_available(void);
+extern void double_fault(void);
+extern void coprocessor_overrun(void);
+extern void invalid_tss(void);
+extern void segment_not_present(void);
+extern void stack_fault(void);
+extern void general_protection(void);
+extern void page_fault(void);
+extern void intel_reserved(void);
+extern void math_fault(void);
+extern void alignment_check(void);
+extern void machine_check(void);
+extern void float_exception(void);
+extern void virtual_exception(void);
+
+static struct {
+    const char * mnemonic;
+    const char * name;
+} trap_names[] = {
+    { "#DE", "Divide error" },
+    { "#DB", "Debug exception" },
+    { NULL, "NMI interrupt" },
+    { "#BP", "Breakpoint" },
+    { "#OF", "Overflow" },
+    { "#BR", "BOUND Range Exceeded" },
+    { "#UD", "Undefined Opcode" },
+    { "#NM", "Device Not Available" },
+    { "#DF", "Double Fault" },
+    { NULL, "Coprocessor Segment Overrun" },
+    { "#TS", "Invalid TSS" },
+    { "#NP", "Segment Not Present" },
+    { "#SS", "Stack Segment Fault" },
+    { "#GP", "General Protection" },
+    { "#PF", "Page Fault" },
+    { NULL, "Intel (15, 21-32) reserved trap" },
+    { "#MF", "x87 Floating-Point Error" },
+    { "#AC", "Alignment Check" },
+    { "#MC", "Machine Check" },
+    { "#XM", "SIMD Floating-Point Exception" },
+    { "#VE", "Virtualization Exception" }
 };
 
-PRIVATE void do_break(long * esp)
+static inline void do_break(long * esp)
 {
     short * segments = (short *)(esp - 9);
     long * registers = esp - 7;
@@ -40,76 +78,64 @@ PRIVATE void do_break(long * esp)
         segments[3], segments[2], segments[1], segments[0]);
 }
 
-PUBLIC void exception(long * esp)
+void exception(unsigned nr, unsigned err, long * esp)
 {
-    int nr = esp[0];
-    int err = esp[1];
-    
-    if(nr < 0 || nr > TRAPS)
-        printk("\nCatched unrecognized exception (%d)\n", nr);
-    else if(trap_errors[nr] == NULL)
-        printk("\nCatched reserved (15, 17-31) error\n");
-    else printk("\n%s: %04x\n", trap_errors[nr], err);
+    if(nr >= TRAPS)
+        printk("Unrecognized exception: %04x\n", err);
+    else {
+        printk("%s: ", trap_names[nr].name);
+        if(trap_names[nr].mnemonic)
+            printk("%s %04x\n", trap_names[nr].mnemonic, err);
+        else printk("%04x\n", err);
+    }
 
     if(nr == 3) do_break(esp);
 
-    printk("cs:eip\t%04x:%p\n", esp[3], esp[2]);
-    printk("ss:esp\t%04x:%p\n", esp[6], esp[5]);
-    printk("efags\t%#x\n", esp[4]);
+    printk("cs:eip\t%04x:%p\n", esp[1], esp[0]);
+    printk("ss:esp\t%04x:%p\n", esp[4], esp[3]);
+    printk("eflags\t%#x\n", esp[2]);
 
-    if(nr != 3) panic("exception in system code");
+    if(nr != 3) panic("Exception in system code");
 }
 
-// defined in asm.s
-EXTERN void divide_error(void);
-EXTERN void debug_except(void);
-EXTERN void nomask_intr(void);
-EXTERN void breakpoint(void);
-EXTERN void overflow(void);
-EXTERN void bounds_check(void);
-EXTERN void invalid_opcode(void);
-EXTERN void coprocessor_na(void);
-EXTERN void double_fault(void);
-EXTERN void coprocessor_overrun(void);
-EXTERN void invalid_tss(void);
-EXTERN void segment_np(void);
-EXTERN void stack_exept(void);
-EXTERN void general_protect(void);
-EXTERN void page_fault(void);
-EXTERN void reserved_trap(void);
-EXTERN void coprocessor_error(void);
-
-PUBLIC void trap_init(void)
+void trap_init(void)
 {
-    outb_p(0x11, 0x20);
-    outb_p(0x11, 0xa0);
+    outb(0x11, 0x20);
+    outb(0x11, 0xa0);
 
     outb(0x20, 0x21);
     outb(0x28, 0xa1);    
     outb(0x04, 0x21);
     outb(0x02, 0xa1);
     
-    outb_p(0x01, 0x21);
-    outb_p(0x01, 0xa1);
+    outb(0x01, 0x21);
+    outb(0x01, 0xa1);
 
     set_trap_gate(0, &divide_error);
-    set_trap_gate(1, &debug_except);
-    set_trap_gate(2, &nomask_intr);
-    set_trap_gate(3, &breakpoint);
+    set_trap_gate(1, &debug_exception);
+    set_trap_gate(2, &nmi_interrupt);
+
+    // set_trap_gate(3, &breakpoint);           /* this is better thing */
+    set_system_gate(3, &breakpoint);            /* but, i use this for debug */
+
     set_trap_gate(4, &overflow);
-    set_trap_gate(5, &bounds_check);
+    set_trap_gate(5, &bound_range_exceeded);
     set_trap_gate(6, &invalid_opcode);
-    set_trap_gate(7, &coprocessor_na);
+    set_trap_gate(7, &device_not_available);
     set_trap_gate(8, &double_fault);
     set_trap_gate(9, &coprocessor_overrun);
     set_trap_gate(10, &invalid_tss);
-    set_trap_gate(11, &segment_np);
-    set_trap_gate(12, &stack_exept);
-    set_trap_gate(13, &general_protect);
+    set_trap_gate(11, &segment_not_present);
+    set_trap_gate(12, &stack_fault);
+    set_trap_gate(13, &general_protection);
     set_trap_gate(14, &page_fault);
-    set_trap_gate(15, &reserved_trap);
-    set_trap_gate(16, &coprocessor_error);
+    set_trap_gate(15, &intel_reserved);
+    set_trap_gate(16, &math_fault);
+    set_trap_gate(17, &alignment_check);
+    set_trap_gate(18, &machine_check);
+    set_trap_gate(19, &float_exception);
+    set_trap_gate(20, &virtual_exception);
 
-    for(int i = 17; i < TRAPS; i++)
-        set_trap_gate(i, &reserved_trap);
+    for(int i = 21; i < TRAPS; i++)
+        set_trap_gate(i, &intel_reserved);
 }

@@ -1,21 +1,28 @@
-#include "kernel.h"
+#include <stdarg.h>
+#include <munix/kernel.h>
+#include <munix/tty.h>
 
-EXTERN int vsprintf(char * buf, const char * fmt, va_list args);
+static char buf[TTY_BUF_SIZE];
 
-PRIVATE char buf[TTY_BUF_SIZE];
-
-PUBLIC int printk(const char * fmt, ...)
+int printk(const char * fmt, ...)
 {
+    int i;
     va_list ap;
     va_start(ap, fmt);
-    int i = vsprintf(buf, fmt, ap);
 
-    ASM("push %%fs\n"
-        "push %%ds\n"
-        "pop %%fs" ::);     // fs = ds
-    
-    i = tty_write(0, buf, i);
-    ASM("pop %%fs" ::);     // restore fs
+    i = vsprintf(buf, fmt, ap);
+
+    asm("pushw %%fs\n\t"
+        "pushw %%ds\n\t"
+        "popw %%fs\n\t"     // fs = ds
+        "pushl %0\n\t"
+        "pushl $buf\n\t"
+        "pushl $0\n\t"
+        "calll tty_write\n\t"
+        "addl $8, %%esp\n\t"
+        "popl %0\n\t"       // get i
+        "popw %%fs"         // restore fs
+        :: "r" (i));
 
     va_end(ap);
     return i;

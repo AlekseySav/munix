@@ -1,33 +1,22 @@
-CC = gcc
-C_INC = -nostdinc -I ../include/
-CFLAGS = -m32 -c $(C_INC) -fno-builtin -fno-stack-protector
+include ../Makefile.inc
 
-AR = ar
-OBJS = \
-	ctype.o \
-	sprintf.o \
-	string.o \
-	time.o \
-	vsprintf.o
+INCLUDE += ../include
 
-%.o: %.c
-	$(CC) $(CFLAGS) -o $@ $<
+OBJECTS = ctype.o memcpy.o strlen.o vsprintf.o
 
-all: lib.a
-
-lib.a: $(OBJS)
-	$(AR) rsc $@ $(OBJS)
-
-ctype.o: ctype.c
-
-sprintf.o: sprintf.c
-
-string.o: string.c
-
-time.o: time.c
-
-vsprintf.o: vsprintf.c
+lib.a: $(OBJECTS)
+	$(AR) rsc $@ $^
 
 clean:
-	rm -f *.o
-	rm -f *.a
+	rm -f lib.a $(OBJECTS)
+
+#
+# dependences
+#
+ctype.o: ctype.c
+
+memcpy.o: memcpy.c
+
+strlen.o: strlen.c
+
+vsprintf.o: vsprintf.c

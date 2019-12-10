@@ -1,67 +1,49 @@
-AS86 = as86 -0 -a
-LD86 = ld86 -0
+include Makefile.inc
 
-AS = gcc -m32 -traditional -c
+INCLUDE = include
+LDFLAG += -T link.ld
 
-CC = gcc
-C_INC = -nostdinc -I include/
-CFLAGS = -m32 -c $(C_INC) -fno-builtin
+usage:
+	@echo "Usage:" >&2
+	@echo "  make Image                build munix image" >&2
+	@echo "  make world                make all utilities etc." >&2
+	@echo "  make clean                remove all temporary files" >&2
 
-LD = ld -s -x -m elf_i386 -T link.ld
+Image: world
+	tools/build.sh boot/boot system > $@
 
-%.o: %.s
-	$(AS) -o $@ $<
+world: boot/boot system
+	chmod +x tools/*.sh
 
-%.o: %.c
-	$(CC) $(CFLAGS) -o $@ $<
+clean:
+	rm -f boot/boot system
+	rm -f boot/*.o init/*.o
+	tools/build.sh $@
+	(cd kernel; make $@)
+	(cd lib; make $@)
 
-all: munix.img
+__test:
+	make clean
+	make Image
+	qemu-system-i386 -full-screen -fda Image
+	hexdump -C Image
+	make clean
+	rm Image
 
-munix.img: tools/build boot/boot tools/system
-	tools/build boot/boot tools/system > $@
+boot/boot: boot/boot.o
+	$(LD) $(LDFLAG) -o $@ $^
 
-boot/boot: boot/boot.s
-	$(AS86) -o $@.o $<
-	$(LD86) -0 -s -o $@ $@.o
+system: boot/head.o init/main.o kernel/kernel.o lib/lib.a
+	$(LD) $(LDFLAG) -o $@ $^
 
-tools/system: boot/head.o init/main.o kernel/kernel.o mm/mm.o lib/lib.a
-	$(LD) $^ -o $@
+boot/boot.o: boot/boot.S
 
-boot/head.o: boot/head.s
+boot/head.o: boot/head.S
 
 init/main.o: init/main.c
 
 kernel/kernel.o:
 	(cd kernel; make)
 
-mm/mm.o:
-	(cd mm; make)
-
 lib/lib.a:
 	(cd lib; make)
-
-tools/build: tools/build.c
-	$(CC) -o $@ $<
-
-clean:
-	rm -f boot/*.o boot/head boot/boot
-	rm -f tools/build
-	rm -f init/*.o
-	rm -f tools/system
-	(cd kernel; make clean)
-	(cd mm; make clean)
-	(cd lib; make clean)
-
-test:
-	make clean
-	make
-	qemu-system-i386 -full-screen -fda munix.img
-	make clean
-	rm munix.img
-
-hex:
-	make clean
-	make
-	hexdump -C munix.img
-	make clean
-	rm munix.img

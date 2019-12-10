@@ -1,61 +1,53 @@
-#include "kernel.h"
+#include <munix/tty.h>
+#include <asm/segment.h>
+#include <ctype.h>
 
-#define _O_FLAG(tty, f) ((tty)->termios.c_oflag & (f))
+#define O_FLAG(tty, flag)   ((tty)->termios.c_oflag & flag)
 
-#define O_POST(tty)     _O_FLAG(tty, OPOST)
-#define O_CRNL(tty)     _O_FLAG(tty, OCRNL)
-#define O_NLCR(tty)     _O_FLAG(tty, ONLCR)
-#define O_NLRET(tty)    _O_FLAG(tty, ONLRET)
-#define O_LCUC(tty)     _O_FLAG(tty, OLCUC)
-#define O_XTABS(tty)    _O_FLAG(tty, XTABS)
-
-PUBLIC struct tty_struct tty_table[] = {
-    { 
-        (struct termios) {
+struct tty_struct tty_table[] = {
+    {
+        /* termios */ {
             OPOST | ONLCR,
-            INIT_C_CC
+            INIT_CC
         },
-        { 0, 0, 0, "" },
+        { 0, 0, "" },
         con_write
     }
 };
 
-PUBLIC void tty_init(void)
+void tty_init(void)
 {
     con_init();
 }
 
-PUBLIC int tty_write(unsigned channel, const char * buf, int nr)
+int tty_write(unsigned channel, const char * buf, int nr)
 {
-    if(channel > 0 || nr < 0)
+    if(channel > 0 && nr < 0)
         return -1;
 
+    struct tty_struct * tty = tty_table + channel;
     char c;
     const char * b = buf;
-    struct tty_struct * tty = tty_table + channel;
 
     while(nr--) {
         c = get_fs_byte(b);
-
-        if(O_POST(tty)) {
-            if(c == '\r' && O_CRNL(tty))
+        if(O_FLAG(tty, OPOST)) {
+            if(c == '\r' && O_FLAG(tty, OCRNL))
                 c = '\n';
-            else if(c == '\n' && O_NLRET(tty))
+            else if(c == '\n' && O_FLAG(tty, ONLRET))
                 c = '\r';
-            else if(c == '\t' && O_XTABS(tty))
+            else if(c == '\t' && O_FLAG(tty, XTABS))
                 c = ' ';
-            else if(c == '\n' && O_NLCR(tty)) {     // "\n" to "\n\r"
+            else if(O_FLAG(tty, OLCUC) && islower(c))
+                c = toupper(c);
+            else if(c == '\n' && O_FLAG(tty, ONLCR)) {
                 PUTCH(tty->write_q, c);
                 c = '\r';
             }
-            else if(O_LCUC(tty))
-                c = toupper(c);
         }
-
         PUTCH(tty->write_q, c);
         b++;
     }
 
     tty->write(tty);
-    return (b - buf);
 }

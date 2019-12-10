@@ -1,13 +1,13 @@
-#ifndef _MUNIX_HEAD_H_
-#define _MUNIX_HEAD_H_
+/*
+ * head.S declares varibles, defined in boot/head.S
+ */
 
-struct table_struct {
-    uint32_t a, b;
+struct table_entry
+{
+    long a, b;
 };
 
-EXTERN struct table_struct idt[256];
-EXTERN struct table_struct gdt[256];
+extern struct table_entry gdt[256];
+extern struct table_entry idt[256];
 
-EXTERN uint32_t pg_dir[1024];
-
-#endif
+extern char pg_dir[4096];
