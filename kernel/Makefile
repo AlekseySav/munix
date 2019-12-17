@@ -2,7 +2,7 @@ include ../Makefile.inc
 
 INCLUDE += ../include
 
-OBJECTS = asm.o console.o fork.o panic.o printk.o sched.o timer.o trap.o tty.o
+OBJECTS = asm.o console.o fork.o panic.o printk.o sched.o sys.o syscall.o timer.o trap.o tty.o
 
 kernel.o: $(OBJECTS)
 	$(LD) $(LDFLAG) -r -o $@ $^
@@ -24,6 +24,10 @@ panic.o: panic.c
 printk.o: printk.c
 
 sched.o: sched.c
+
+sys.o: sys.c
+
+syscall.o: syscall.S
 
 timer.o: timer.S
 

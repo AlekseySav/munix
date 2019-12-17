@@ -3,8 +3,9 @@
 
 #include <stddef.h>
 
-size_t strlen(const char * str);
+const char * strerror(int err);
 
+size_t strlen(const char * str);
 void * memcpy(void * dest, void * src, size_t len);
 
 #endif

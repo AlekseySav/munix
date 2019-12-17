@@ -1,53 +1,67 @@
+#include <munix/config.h>
 #include <munix/sched.h>
 #include <asm/system.h>
 #include <asm/io.h>
 
 extern void timer_intr(void);
 
-static char init_stack[4096];
-
-static struct task_struct init_task = {
-    /* ldt */ { 
-        { 0, 0 },                       // NULL
-        { 0x000007ff, 0x00c0fa00 },     // code
-        { 0x000007ff, 0x00c0f200 }      // data
-    },
-    /* tss */ {
-        0,
-        (long)&init_stack + 4096, 0x10,
-        0, 0, 0, 0, 
-        (long)&pg_dir, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0x17, 0x0f, 0x17, 0x17, 0x17, 0x17,
-        _LDT(0), 0, 0
+static union task_union init_task = {
+    {
+        0, 0, 15,
+        /* ldt */ { 
+            { 0, 0 },                       // NULL
+            { 0x000007ff, 0x00c0fa00 },     // code
+            { 0x000007ff, 0x00c0f200 }      // data
+        },
+        /* tss */ {
+            0,
+            (long)&init_task + PAGE_SIZE, 0x10,
+            0, 0, 0, 0, 
+            (long)&pg_dir, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0x17, 0x0f, 0x17, 0x17, 0x17, 0x17,
+            _LDT(0), 0, 0
+        }
     }
 };
 
-struct task_struct * task_table[NR_TASKS] = { &init_task, 0 };
+struct task_struct * task_table[NR_TASKS] = { &init_task.task, 0 };
 struct task_struct * current;
-
-static int last = 0;
 
 void shedule(void)
 {
-    last = (last + 1);
+    unsigned i, next;
+    int c = -1;
+    struct task_struct * p;
 
-    struct task_struct * next = task_table[last];
-    if(next == current)
-        return;
-    if(last > 1)
-        return;
+    if(current->counter-- > 0) return;
 
-    switch_to(last);
+    for(i = 0; i < NR_TASKS; i++) {
+        p = task_table[i];
+        if(!p) continue;
+
+        if(p->counter > c) {
+            c = p->counter;
+            next = i;
+        }
+        else p->counter += p->priority;
+    }
+
+  //  printk(" %d", next);
+    if(current == task_table[next])
+        return;
+    current = task_table[next];
+    asm("clts");
+    switch_to(next);
 }
 
 void sched_init(void)
 {
-    set_ldt_desc(FIRST_LDT, &init_task.ldt);        /* NOTE! use FIRS_LDT + (nr << 1); not _LDT(nr) */
-    set_tss_desc(FIRST_TSS, &init_task.tss);        /* ... */
+    set_ldt_desc(FIRST_LDT, &init_task.task.ldt);   /* NOTE! use FIRST_LDT + (nr << 1); not _LDT(nr) */
+    set_tss_desc(FIRST_TSS, &init_task.task.tss);   /* ... */
     ltr(0);
     lldt(0);
-    current = &init_task;
+    current = &init_task.task;
 
 
 	outb(52, 0x43);		                            // binary, mode 3, lobyte/hibyte

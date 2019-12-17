@@ -1,9 +1,10 @@
 .globl timer_intr
 
+.text
+
 timer_intr:
     incb 0xb8000
 
-    cli
     pushal
     pushw %ds
     pushw %es
@@ -25,5 +26,4 @@ timer_intr:
     popw %es
     popw %ds
     popal
-    sti
     iret

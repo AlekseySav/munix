@@ -1,3 +1,4 @@
+#include <munix/config.h>
 #include <munix/tty.h>
 #include <asm/segment.h>
 #include <ctype.h>

@@ -9,4 +9,6 @@
 
 #define NR_TASKS    64
 
+#define _KERNEL
+
 #endif

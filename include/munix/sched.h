@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <munix/config.h>
 #include <munix/head.h>
+#include <munix/mm.h>
 
 #define HZ      100
 #define LATCH   (1193182 / HZ)
@@ -41,8 +42,17 @@ struct tss_struct
 
 struct task_struct
 {
+    int pid;
+    int counter;
+    int priority;
     struct table_entry ldt[3];
     struct tss_struct tss;
+};
+
+union task_union
+{
+    struct task_struct task;
+    char stack[PAGE_SIZE];
 };
 
 extern struct task_struct * task_table[NR_TASKS];

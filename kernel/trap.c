@@ -2,6 +2,7 @@
  * trap.c is c-code, that hendles hardware exceptions
  */
 
+#include <munix/config.h>
 #include <stddef.h>
 
 #include <munix/kernel.h>

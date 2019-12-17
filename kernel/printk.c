@@ -1,3 +1,4 @@
+#include <munix/config.h>
 #include <stdarg.h>
 #include <munix/kernel.h>
 #include <munix/tty.h>

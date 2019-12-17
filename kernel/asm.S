@@ -93,7 +93,6 @@ virtual_exception:
     jmp no_error_code
 
 no_error_code:
-    cli
     xchgl %eax, (%esp)
     pushl %ebx
     movl %eax, %ebx                     # ebx = nr

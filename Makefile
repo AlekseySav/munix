@@ -20,6 +20,7 @@ clean:
 	rm -f boot/*.o init/*.o
 	tools/build.sh $@
 	(cd kernel; make $@)
+	(cd mm; make $@)
 	(cd lib; make $@)
 
 __test:
@@ -33,7 +34,7 @@ __test:
 boot/boot: boot/boot.o
 	$(LD) $(LDFLAG) -o $@ $^
 
-system: boot/head.o init/main.o kernel/kernel.o lib/lib.a
+system: boot/head.o init/main.o kernel/kernel.o mm/mm.o lib/lib.a
 	$(LD) $(LDFLAG) -o $@ $^
 
 boot/boot.o: boot/boot.S
@@ -44,6 +45,9 @@ init/main.o: init/main.c
 
 kernel/kernel.o:
 	(cd kernel; make)
+
+mm/mm.o:
+	(cd mm; make)
 
 lib/lib.a:
 	(cd lib; make)

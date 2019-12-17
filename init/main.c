@@ -5,20 +5,25 @@
  * "main" function does nessesary setups and launch INIT process
  */
 
-#include <stddef.h>
+#include <munix/config.h>
 #include <munix/kernel.h>
+#include <munix/mm.h>
 #include <asm/system.h>
-#include <string.h>
+#include <unistd.h>
+#include <errno.h>
 
 #define RELEASE "0"
 #define VERSION "0.1"
 
-int sys_fork(void);
+static syscall1(int, write, const char *, msg);
+
+#include <munix/mm.h>
 
 void main(void)         /* NOTE: this is really void, no error here :-) */
 {
     tty_init();
     trap_init();
+    sys_init();
     sched_init();
     sti();
 
@@ -26,20 +31,21 @@ void main(void)         /* NOTE: this is really void, no error here :-) */
 
     move_to_user_mode();
     
-    if(sys_fork()) {
-        asm("int3");
-        *(short *)0xb8002 = 0x0f30;     // init_task will print this
+    asm("int3");
+    
+    if(!fork()) {
+        write("1");             // this will be written (by child)
     }
     else {
-        *(short *)0xb8004 = 0x0f30;     // fork_task will prints this :-)
+        write("2");             // this will be written too - but by parent :-)
     }
 
     asm("1:jmp 1b");
 }
 
-static char stack[4096];
+static char stack[PAGE_SIZE];
 
 struct {
     char * stack;
     short segment;
-} __attribute__((packed)) stack_start = { &stack[4096], 0x10 };
+} __attribute__((packed)) stack_start = { &stack[PAGE_SIZE], 0x10 };
