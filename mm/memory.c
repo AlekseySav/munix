@@ -62,6 +62,6 @@ void sys_setup(void)
         if(mem_map[i]) used++;
 
     printk("Used memory:\t%4d KiB = %4d pages\n", used * 4, used);
-    printk("Free memory:\t%d KiB = %d pages\n", ((HIGH_MEMORY - LOW_MEMORY) / 1024 - (used * 4)),
+    printk("Free memory:\t%4d KiB = %4d pages\n", ((HIGH_MEMORY - LOW_MEMORY) / 1024 - (used * 4)),
         ((HIGH_MEMORY - LOW_MEMORY) / PAGE_SIZE - used));
 }

@@ -10,6 +10,7 @@
 #define LATCH   (1193182 / HZ)
 
 #define TASK_RUNNING    0   // normal task
+#define TASK_PAUSE      1   // paused by system int
 
 struct tss_struct
 {
@@ -46,8 +47,11 @@ struct task_struct
 {
     int state;
     int pid;
+    int parent;
     int counter;
     int priority;
+    int alarm;
+    int signal;
     struct table_entry ldt[3];
     struct tss_struct tss;
 };
@@ -73,10 +77,14 @@ extern struct task_struct * current;
 #define switch_to(n) do { \
     struct { long a, b; } __tmp; \
     asm volatile( \
+        "cmpl %%ecx, current\n\t" \
+        "je 1f\n\t" \
+        "movl %%ecx, current\n\t" \
         "movw %%dx, %1\n\t" \
         "ljmp * %0\n\t" \
-        "clts"\
-        ::  "m" (*&__tmp.a), "m" (*&__tmp.b), \
+        "1:" \
+        ::  "m" (__tmp.a), "m" (__tmp.b), \
+            "c" (task_table[n]), \
             "d" (_TSS(n))); \
     } while(0)
 

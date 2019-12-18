@@ -47,7 +47,8 @@ int sys_fork(long ebx, long ecx, long edx, long ebp, long esi, long edi,
 
     *p = *current;
 
-    p->pid = pid;    
+    p->pid = pid;
+    p->parent = current->pid; 
     p->tss.link = 0;
     p->tss.esp0 = (long)p + PAGE_SIZE;
     /* cr3 */

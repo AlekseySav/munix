@@ -3,11 +3,15 @@
 #include <asm/system.h>
 #include <asm/io.h>
 
+long volatile jiffies = 0;
+
 extern void timer_intr(void);
 
 static union task_union init_task = {
     {
-        0, 0, 0, 15,
+        TASK_RUNNING, 
+        0, 0, 
+        0, 15, 0, 0, 
         /* ldt */ { 
             { 0, 0 },                       // NULL
             { 0x000007ff, 0x00c0fa00 },     // code
@@ -28,17 +32,26 @@ static union task_union init_task = {
 struct task_struct * task_table[NR_TASKS] = { &init_task.task };
 struct task_struct * current;
 
-void shedule(void)
+static void shedule(void)
 {
     unsigned i, next;
     int c = -1;
     struct task_struct * p;
 
-    if(current->counter-- > 0) return;
+    for(i = 0; i < NR_TASKS; i++) {
+        p = task_table[i];
+        if(!p) continue;
+        if(p->alarm && p->alarm < jiffies)
+            p->signal = 1;
+        if(p->signal && p->state == TASK_PAUSE)
+            p->state = TASK_RUNNING;
+    }
 
     for(i = 0; i < NR_TASKS; i++) {
         p = task_table[i];
         if(!p) continue;
+        if(p->state != TASK_RUNNING)
+            continue;
 
         if(p->counter > c) {
             c = p->counter;
@@ -47,11 +60,39 @@ void shedule(void)
         else p->counter += p->priority;
     }
 
-    if(current == task_table[next])
-        return;
-    current = task_table[next];
-
     switch_to(next);
+}
+
+void do_timer(void)
+{
+    jiffies++;
+    if(--current->counter > 0) return;
+    shedule();
+}
+
+int sys_pause(void)
+{
+    current->state = TASK_PAUSE;
+    shedule();
+    return 0;
+}
+
+int sys_alarm(long seconds)
+{
+    if(seconds > 0)
+        current->alarm = jiffies + HZ * seconds;
+    else current->alarm = 0;
+    return seconds;
+}
+
+int sys_getpid(void)
+{
+    return current->pid;
+}
+
+int sys_getppid(void)
+{
+    return current->parent;
 }
 
 void sched_init(void)

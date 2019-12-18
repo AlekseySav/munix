@@ -76,7 +76,7 @@ rep stosl
     
 	movl $7, %eax                           /* ... */
 	movl $pg0, %edi
-	movl $1024, %ecx                        /* one page */
+	movl $HIGH_MEMORY / 4096, %ecx          /* pages describes this memory */
 1:	stosl
 	addl $4096, %eax
 	decl %ecx

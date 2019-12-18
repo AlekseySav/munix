@@ -6,6 +6,7 @@
  */
 
 #include <munix/config.h>
+#include <stdarg.h>
 #include <munix/kernel.h>
 #include <munix/mm.h>
 #include <asm/system.h>
@@ -15,10 +16,23 @@
 #define RELEASE "0"
 #define VERSION "0.1"
 
-static syscall0(int, setup);
-static syscall1(int, write, const char *, msg);
+syscall0(int, setup);
+syscall3(int, write, int, fd, char *, buf, int, nr);
+syscall0(int, getpid);
+syscall1(int, alarm, long, seconds);
+syscall0(int, pause);
+syscall0(int, getppid);
 
 void init(void);
+
+static char print_buf[1024];
+
+static int printf(const char * fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    return write(1, print_buf, vsprintf(print_buf, fmt, ap));
+}
 
 void main(void)         /* NOTE: this is really void, no error here :-) */
 {
@@ -41,10 +55,10 @@ void main(void)         /* NOTE: this is really void, no error here :-) */
 
 void init(void)
 {
-    for(int i = 0; i < 767; i++)
-        get_free_page();
-    
+    alarm(1);
+    pause();
     setup();
+    printf("pid: %d\nparent: %d\n", getpid(), getppid());
 }
 
 static char stack[PAGE_SIZE];

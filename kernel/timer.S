@@ -17,7 +17,7 @@ timer_intr:
 
     movb $0x20, %al
     outb %al, $0x20             # EOI
-    call shedule
+    call do_timer
 
     popw %gs
     popw %fs
