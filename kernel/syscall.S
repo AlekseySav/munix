@@ -3,7 +3,6 @@
 .text
 
 system_call:
-    cli
     pushl %ds
     pushl %es
     pushl %fs
@@ -28,5 +27,4 @@ system_call:
     popl %fs
     popl %es
     popl %ds
-    sti
     iret

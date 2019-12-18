@@ -1,5 +1,7 @@
 .globl start, pg_dir, idt, gdt
 
+#include <munix/config.h>
+
 /*
  * boot/head.S
  *
@@ -59,20 +61,22 @@ setup_idt:
 
 .org 0x1000
 pg0:
-.org 0x2000
-pg1:
-.org 0x3000
+.org 0x1000 + [HIGH_MEMORY / 1024]
 
 setup_paging:
-    xorl %eax, %eax
-    xorl %edi, %edi
-    movl $1024,%ecx
-rep stosl                                   /* zero first page of memory - pg_dir */
-    movl $pg0 + 7, pg_dir                   /* present, user, r/w bits */
-    movl $pg0 + 7, pg_dir + 4
+    movl $pg0 + 7, %eax                     /* present, user, r/w bits */
+    movl $pg_dir, %edi
+    movl $HIGH_MEMORY / 0x400000, %ecx
+1:  stosl                                   /* set pg_dir */
+    addl $4, %edi
+    decl %ecx
+    jnz 1b
+    movl $1024 - [HIGH_MEMORY / 0x400000], %ecx
+rep stosl
+    
 	movl $7, %eax                           /* ... */
 	movl $pg0, %edi
-	movl $2048, %ecx                        /* two pages: pg0 and pg1 */
+	movl $1024, %ecx                        /* one page */
 1:	stosl
 	addl $4096, %eax
 	decl %ecx

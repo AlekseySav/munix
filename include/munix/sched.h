@@ -9,6 +9,8 @@
 #define HZ      100
 #define LATCH   (1193182 / HZ)
 
+#define TASK_RUNNING    0   // normal task
+
 struct tss_struct
 {
     uint32_t link;          // 16 high bits zero
@@ -42,6 +44,7 @@ struct tss_struct
 
 struct task_struct
 {
+    int state;
     int pid;
     int counter;
     int priority;
@@ -71,7 +74,8 @@ extern struct task_struct * current;
     struct { long a, b; } __tmp; \
     asm volatile( \
         "movw %%dx, %1\n\t" \
-        "ljmp * %0" \
+        "ljmp * %0\n\t" \
+        "clts"\
         ::  "m" (*&__tmp.a), "m" (*&__tmp.b), \
             "d" (_TSS(n))); \
     } while(0)

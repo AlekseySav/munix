@@ -15,9 +15,10 @@
 #define RELEASE "0"
 #define VERSION "0.1"
 
+static syscall0(int, setup);
 static syscall1(int, write, const char *, msg);
 
-#include <munix/mm.h>
+void init(void);
 
 void main(void)         /* NOTE: this is really void, no error here :-) */
 {
@@ -31,16 +32,19 @@ void main(void)         /* NOTE: this is really void, no error here :-) */
 
     move_to_user_mode();
     
-    asm("int3");
-    
     if(!fork()) {
-        write("1");             // this will be written (by child)
-    }
-    else {
-        write("2");             // this will be written too - but by parent :-)
+        init();
     }
 
     asm("1:jmp 1b");
+}
+
+void init(void)
+{
+    for(int i = 0; i < 767; i++)
+        get_free_page();
+    
+    setup();
 }
 
 static char stack[PAGE_SIZE];

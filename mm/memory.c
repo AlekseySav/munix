@@ -47,3 +47,21 @@ void free_page(long addr)
     if(--mem_map[page])
         panic("Trying to free free page");
 }
+
+
+// small util, that display memory info
+void sys_setup(void)
+{
+    unsigned i, used;
+
+    printk("Paging memory:\t%4d KiB = %4d pages\n", HIGH_MEMORY / 1024, HIGH_MEMORY / PAGE_SIZE);
+    printk("Kernel size:\t%4d KiB = %4d pages\n", LOW_MEMORY / 1024, LOW_MEMORY / PAGE_SIZE);
+    
+    used = 0;
+    for(i = 0; i < PAGING_PAGES; i++)
+        if(mem_map[i]) used++;
+
+    printk("Used memory:\t%4d KiB = %4d pages\n", used * 4, used);
+    printk("Free memory:\t%d KiB = %d pages\n", ((HIGH_MEMORY - LOW_MEMORY) / 1024 - (used * 4)),
+        ((HIGH_MEMORY - LOW_MEMORY) / PAGE_SIZE - used));
+}

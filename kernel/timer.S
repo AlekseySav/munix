@@ -3,8 +3,6 @@
 .text
 
 timer_intr:
-    incb 0xb8000
-
     pushal
     pushw %ds
     pushw %es

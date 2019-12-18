@@ -6,6 +6,7 @@
 
 void system_call(void);
 
+int sys_setup(void);
 int sys_fork(void);
 
 int sys_write(const char * msg)
@@ -14,7 +15,7 @@ int sys_write(const char * msg)
 }
 
 fn_ptr syscall_table[] = {
-    (fn_ptr)NULL,
+    (fn_ptr)sys_setup,
     (fn_ptr)sys_write,
     (fn_ptr)sys_fork
 };

@@ -7,7 +7,7 @@ extern void timer_intr(void);
 
 static union task_union init_task = {
     {
-        0, 0, 15,
+        0, 0, 0, 15,
         /* ldt */ { 
             { 0, 0 },                       // NULL
             { 0x000007ff, 0x00c0fa00 },     // code
@@ -25,7 +25,7 @@ static union task_union init_task = {
     }
 };
 
-struct task_struct * task_table[NR_TASKS] = { &init_task.task, 0 };
+struct task_struct * task_table[NR_TASKS] = { &init_task.task };
 struct task_struct * current;
 
 void shedule(void)
@@ -47,11 +47,10 @@ void shedule(void)
         else p->counter += p->priority;
     }
 
-  //  printk(" %d", next);
     if(current == task_table[next])
         return;
     current = task_table[next];
-    asm("clts");
+
     switch_to(next);
 }
 

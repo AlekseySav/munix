@@ -14,9 +14,11 @@
 
 // n = n / base && return n % base;
 #define div(n, base) ({ \
-    unsigned _res = (unsigned)n % (unsigned)base; \
-    n /= (unsigned)base; \
-    _res; })
+    int res; \
+    asm("divl %4" \
+        : "=a" (n), "=d" (res) \
+        : "a" (n), "d" (0), "r" (base)); \
+    res;  })
 
 static int skip_atoi(const char ** ptr)
 {

@@ -2,14 +2,14 @@
 #define _UNISTD_H_
 
 #define __NR_setup      0
-#define __NR_write     1
+#define __NR_write      1
 #define __NR_fork       2
 
 #define syscall0(type, name) \
 type name(void) \
 { \
     type res; \
-    asm("int $0x80" \
+    asm volatile("int $0x80" \
         :   "=a" (res) \
         :   "a" (__NR_##name)); \
     if(res >= 0) \
@@ -22,7 +22,7 @@ type name(void) \
 type name(t1 a1) \
 { \
     type res; \
-    asm("int $0x80" \
+    asm volatile("int $0x80" \
         :   "=a" (res) \
         :   "a" (__NR_##name), \
             "b" (a1)); \
