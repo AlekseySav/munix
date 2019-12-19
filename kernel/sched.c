@@ -2,6 +2,7 @@
 #include <munix/sched.h>
 #include <asm/system.h>
 #include <asm/io.h>
+#include <signal.h>
 
 long volatile jiffies = 0;
 
@@ -42,7 +43,7 @@ static void shedule(void)
         p = task_table[i];
         if(!p) continue;
         if(p->alarm && p->alarm < jiffies)
-            p->signal = 1;
+            p->signal |= SIG(SIGALRM);
         if(p->signal && p->state == TASK_PAUSE)
             p->state = TASK_RUNNING;
     }

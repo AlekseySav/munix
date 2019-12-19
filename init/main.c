@@ -5,23 +5,19 @@
  * "main" function does nessesary setups and launch INIT process
  */
 
-#include <munix/config.h>
 #include <stdarg.h>
-#include <munix/kernel.h>
-#include <munix/mm.h>
-#include <asm/system.h>
 #include <unistd.h>
 #include <errno.h>
+#include <munix/config.h>
+#include <munix/kernel.h>
+#include <munix/unistd.h>
+#include <munix/mm.h>
+#include <asm/system.h>
 
 #define RELEASE "0"
 #define VERSION "0.1"
 
-syscall0(int, setup);
-syscall3(int, write, int, fd, char *, buf, int, nr);
-syscall0(int, getpid);
-syscall1(int, alarm, long, seconds);
-syscall0(int, pause);
-syscall0(int, getppid);
+static syscall0(int, setup);
 
 void init(void);
 
